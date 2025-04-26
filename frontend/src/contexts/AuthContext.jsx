@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import * as jwt_decode from 'jwt-decode';
+import jwt_decode from 'jwt-decode';
 
 // Crear el contexto de autenticación
 const AuthContext = createContext();
@@ -16,6 +16,8 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const navigate = useNavigate();
 
   // Verificar si hay un token almacenado al cargar la aplicación
@@ -40,6 +42,12 @@ export const AuthProvider = ({ children }) => {
                 // Obtener información del usuario actual
                 const userResponse = await authService.getCurrentUser();
                 setCurrentUser(userResponse.data);
+                setIsAuthenticated(true);
+                
+                // Establecer el rol principal del usuario
+                if (userResponse.data.roles && userResponse.data.roles.length > 0) {
+                  setUserRole(userResponse.data.roles[0]);
+                }
               } else {
                 // No hay refresh token, logout
                 logout();
@@ -53,6 +61,12 @@ export const AuthProvider = ({ children }) => {
             try {
               const response = await authService.getCurrentUser();
               setCurrentUser(response.data);
+              setIsAuthenticated(true);
+              
+              // Establecer el rol principal del usuario
+              if (response.data.roles && response.data.roles.length > 0) {
+                setUserRole(response.data.roles[0]);
+              }
             } catch (userError) {
               // Error al obtener información del usuario, logout
               logout();
@@ -93,6 +107,12 @@ export const AuthProvider = ({ children }) => {
       
       const userResponse = await authService.getCurrentUser();
       setCurrentUser(userResponse.data);
+      setIsAuthenticated(true);
+      
+      // Establecer el rol principal del usuario
+      if (userResponse.data.roles && userResponse.data.roles.length > 0) {
+        setUserRole(userResponse.data.roles[0]);
+      }
       
       return { success: true };
     } catch (e) {
@@ -123,6 +143,12 @@ export const AuthProvider = ({ children }) => {
       
       const userResponse = await authService.getCurrentUser();
       setCurrentUser(userResponse.data);
+      setIsAuthenticated(true);
+      
+      // Establecer el rol principal del usuario
+      if (userResponse.data.roles && userResponse.data.roles.length > 0) {
+        setUserRole(userResponse.data.roles[0]);
+      }
       
       return { success: true };
     } catch (e) {
@@ -137,7 +163,9 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     authService.logout();
     setCurrentUser(null);
-    navigate('/auth/login');
+    setIsAuthenticated(false);
+    setUserRole(null);
+    navigate('/login');
   };
 
   // Función para registrar un nuevo usuario
@@ -196,6 +224,12 @@ export const AuthProvider = ({ children }) => {
       
       const response = await authService.updateProfile(userData);
       setCurrentUser(response.data);
+      
+      // Actualizar el rol principal si ha cambiado
+      if (response.data.roles && response.data.roles.length > 0) {
+        setUserRole(response.data.roles[0]);
+      }
+      
       return { success: true };
     } catch (e) {
       setError(e.response?.data?.detail || 'Error al actualizar perfil');
@@ -265,6 +299,8 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     loading,
     error,
+    isAuthenticated,
+    userRole,
     login,
     logout,
     register,

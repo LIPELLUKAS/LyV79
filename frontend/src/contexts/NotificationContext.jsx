@@ -1,106 +1,83 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { communicationsService } from '../services/api';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useState } from 'react';
 
-// Crear el contexto de notificaciones
 const NotificationContext = createContext();
 
-// Hook personalizado para usar el contexto de notificaciones
-export const useNotifications = () => {
+export const useNotification = () => {
   return useContext(NotificationContext);
 };
 
-// Proveedor del contexto de notificaciones
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { currentUser } = useAuth();
 
-  // Cargar notificaciones cuando el usuario está autenticado
-  useEffect(() => {
-    if (!currentUser) {
-      setNotifications([]);
-      setUnreadCount(0);
-      setLoading(false);
-      return;
+  // Mostrar una notificación
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    const id = Date.now();
+    
+    // Añadir nueva notificación
+    setNotifications(prev => [...prev, { id, message, type, duration }]);
+    
+    // Eliminar automáticamente después de la duración especificada
+    if (duration > 0) {
+      setTimeout(() => {
+        removeNotification(id);
+      }, duration);
     }
-
-    const loadNotifications = async () => {
-      try {
-        setLoading(true);
-        const response = await communicationsService.getAllNotifications({ read: false });
-        setNotifications(response.data);
-        setUnreadCount(response.data.length);
-      } catch (e) {
-        setError(e.message);
-        console.error('Error al cargar notificaciones:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadNotifications();
-
-    // Configurar un intervalo para actualizar las notificaciones cada 5 minutos
-    const interval = setInterval(loadNotifications, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [currentUser]);
-
-  // Función para marcar una notificación como leída
-  const markAsRead = async (id) => {
-    try {
-      await communicationsService.markNotificationAsRead(id);
-      
-      // Actualizar el estado local
-      setNotifications(prevNotifications => 
-        prevNotifications.filter(notification => notification.id !== id)
-      );
-      setUnreadCount(prevCount => prevCount - 1);
-      
-      return { success: true };
-    } catch (e) {
-      setError(e.response?.data?.detail || 'Error al marcar la notificación como leída');
-      return { success: false, error: e.response?.data?.detail || 'Error al marcar la notificación como leída' };
-    }
+    
+    return id;
   };
 
-  // Función para marcar todas las notificaciones como leídas
-  const markAllAsRead = async () => {
-    try {
-      // Marcar cada notificación como leída
-      const promises = notifications.map(notification => 
-        communicationsService.markNotificationAsRead(notification.id)
-      );
-      
-      await Promise.all(promises);
-      
-      // Actualizar el estado local
-      setNotifications([]);
-      setUnreadCount(0);
-      
-      return { success: true };
-    } catch (e) {
-      setError(e.response?.data?.detail || 'Error al marcar todas las notificaciones como leídas');
-      return { success: false, error: e.response?.data?.detail || 'Error al marcar todas las notificaciones como leídas' };
-    }
+  // Eliminar una notificación
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
   };
 
-  // Valor del contexto
+  // Eliminar todas las notificaciones
+  const clearAllNotifications = () => {
+    setNotifications([]);
+  };
+
+  // Componente para renderizar las notificaciones
+  const NotificationContainer = () => {
+    return (
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map(notification => (
+          <div
+            key={notification.id}
+            className={`px-4 py-3 rounded-lg shadow-md flex items-start justify-between transition-all duration-300 transform translate-x-0 ${
+              notification.type === 'success' ? 'bg-green-100 text-green-800 border-l-4 border-green-500' :
+              notification.type === 'error' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
+              notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' :
+              'bg-blue-100 text-blue-800 border-l-4 border-blue-500'
+            }`}
+          >
+            <div className="flex-1 mr-2">
+              <p className="text-sm font-medium">{notification.message}</p>
+            </div>
+            <button
+              onClick={() => removeNotification(notification.id)}
+              className="text-gray-500 hover:text-gray-700 focus:outline-none"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const value = {
     notifications,
-    unreadCount,
-    loading,
-    error,
-    markAsRead,
-    markAllAsRead
+    showNotification,
+    removeNotification,
+    clearAllNotifications
   };
 
   return (
     <NotificationContext.Provider value={value}>
       {children}
+      <NotificationContainer />
     </NotificationContext.Provider>
   );
 };

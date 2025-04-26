@@ -1,61 +1,101 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { adminService } from '../services/api';
+import { useNotification } from './NotificationContext';
 
-// Crear el contexto de configuración
 const ConfigContext = createContext();
 
-// Hook personalizado para usar el contexto de configuración
 export const useConfig = () => {
   return useContext(ConfigContext);
 };
 
-// Proveedor del contexto de configuración
 export const ConfigProvider = ({ children }) => {
-  const [lodgeConfig, setLodgeConfig] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { showNotification } = useNotification();
+  const [config, setConfig] = useState({
+    lodgeName: 'Logia Luz y Verdad',
+    lodgeNumber: '79',
+    grandLodge: 'Gran Logia de la Jurisdicción',
+    language: localStorage.getItem('language') || 'es',
+    theme: localStorage.getItem('theme') || 'light',
+    dateFormat: localStorage.getItem('dateFormat') || 'DD/MM/YYYY',
+    timeFormat: localStorage.getItem('timeFormat') || '24h',
+    currency: localStorage.getItem('currency') || 'USD',
+    isLoaded: false
+  });
 
-  // Cargar la configuración de la logia al iniciar
+  // Cargar configuración desde el backend
   useEffect(() => {
-    const loadConfig = async () => {
+    const fetchConfig = async () => {
       try {
-        const response = await adminService.getLodgeConfiguration();
-        setLodgeConfig(response.data);
-      } catch (e) {
-        setError(e.message);
-        console.error('Error al cargar la configuración:', e);
-      } finally {
-        setLoading(false);
+        // En una implementación real, esto cargaría la configuración desde el backend
+        // const response = await api.get('/config');
+        // setConfig({ ...response.data, isLoaded: true });
+        
+        // Por ahora, simulamos que la configuración ya está cargada
+        setConfig(prevConfig => ({ ...prevConfig, isLoaded: true }));
+      } catch (error) {
+        console.error('Error al cargar la configuración:', error);
+        showNotification('Error al cargar la configuración del sistema', 'error');
       }
     };
 
-    loadConfig();
-  }, []);
+    fetchConfig();
+  }, [showNotification]);
 
-  // Función para actualizar la configuración
-  const updateConfig = async (configData) => {
+  // Actualizar configuración
+  const updateConfig = async (newConfig) => {
     try {
-      setLoading(true);
-      setError(null);
+      // En una implementación real, esto enviaría la configuración al backend
+      // await api.put('/config', newConfig);
       
-      const response = await adminService.updateLodgeConfiguration(configData);
-      setLodgeConfig(response.data);
+      // Actualizar el estado local
+      setConfig({ ...newConfig, isLoaded: true });
       
-      return { success: true };
-    } catch (e) {
-      setError(e.response?.data?.detail || 'Error al actualizar la configuración');
-      return { success: false, error: e.response?.data?.detail || 'Error al actualizar la configuración' };
-    } finally {
-      setLoading(false);
+      // Guardar preferencias en localStorage
+      if (newConfig.language) localStorage.setItem('language', newConfig.language);
+      if (newConfig.theme) localStorage.setItem('theme', newConfig.theme);
+      if (newConfig.dateFormat) localStorage.setItem('dateFormat', newConfig.dateFormat);
+      if (newConfig.timeFormat) localStorage.setItem('timeFormat', newConfig.timeFormat);
+      if (newConfig.currency) localStorage.setItem('currency', newConfig.currency);
+      
+      showNotification('Configuración actualizada correctamente', 'success');
+      return true;
+    } catch (error) {
+      console.error('Error al actualizar la configuración:', error);
+      showNotification('Error al actualizar la configuración', 'error');
+      return false;
     }
   };
 
-  // Valor del contexto
+  // Cambiar idioma
+  const changeLanguage = (language) => {
+    updateConfig({ ...config, language });
+  };
+
+  // Cambiar tema
+  const changeTheme = (theme) => {
+    updateConfig({ ...config, theme });
+    
+    // Aplicar tema al documento
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  // Aplicar tema inicial
+  useEffect(() => {
+    if (config.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [config.theme]);
+
   const value = {
-    lodgeConfig,
-    loading,
-    error,
-    updateConfig
+    config,
+    updateConfig,
+    changeLanguage,
+    changeTheme
   };
 
   return (
