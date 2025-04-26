@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { communicationsService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-
 const EventForm = ({ eventId = null }) => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -47,14 +46,15 @@ const EventForm = ({ eventId = null }) => {
         // Formatear fechas para los inputs
         const startDate = new Date(event.start_date);
         const startDateStr = startDate.toISOString().split('T')[0];
-        const startTimeStr = startDate.toTimeString().slice(0, 5);
+        const startTimeStr = event.start_time || startDate.toTimeString().slice(0, 5);
         
         let endDateStr = '';
         let endTimeStr = '';
+        
         if (event.end_date) {
           const endDate = new Date(event.end_date);
           endDateStr = endDate.toISOString().split('T')[0];
-          endTimeStr = endDate.toTimeString().slice(0, 5);
+          endTimeStr = event.end_time || endDate.toTimeString().slice(0, 5);
         }
         
         // Establecer valores en el formulario
@@ -71,9 +71,9 @@ const EventForm = ({ eventId = null }) => {
         setValue('agenda', event.agenda);
         setValue('notes', event.notes);
         
-        // Cargar miembros invitados
+        // Cargar asistentes
         const attendeesResponse = await communicationsService.getEventAttendees(eventId);
-        setSelectedMembers(attendeesResponse.data.map(a => a.user_id));
+        setSelectedMembers(attendeesResponse.data.map(attendee => attendee.user_id));
       } catch (error) {
         console.error('Error al cargar datos del evento:', error);
       } finally {
@@ -84,11 +84,11 @@ const EventForm = ({ eventId = null }) => {
     fetchEventData();
   }, [eventId, setValue]);
   
-  // Cargar lista de miembros
+  // Cargar miembros disponibles
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const response = await communicationsService.getEligibleMembers(requiredDegree);
+        const response = await communicationsService.getMembers({ degree: requiredDegree });
         setMembers(response.data);
       } catch (error) {
         console.error('Error al cargar miembros:', error);
@@ -99,12 +99,12 @@ const EventForm = ({ eventId = null }) => {
   }, [requiredDegree]);
   
   // Manejar selección de miembros
-  const handleMemberSelection = (userId) => {
+  const handleMemberSelection = (memberId) => {
     setSelectedMembers(prev => {
-      if (prev.includes(userId)) {
-        return prev.filter(id => id !== userId);
+      if (prev.includes(memberId)) {
+        return prev.filter(id => id !== memberId);
       } else {
-        return [...prev, userId];
+        return [...prev, memberId];
       }
     });
   };
@@ -124,40 +124,20 @@ const EventForm = ({ eventId = null }) => {
     try {
       setSubmitting(true);
       
-      // Combinar fecha y hora
-      const startDateTime = new Date(`${data.start_date}T${data.start_time}`);
-      let endDateTime = null;
-      if (data.end_date && data.end_time) {
-        endDateTime = new Date(`${data.end_date}T${data.end_time}`);
-      }
-      
       const eventData = {
-        title: data.title,
-        event_type: data.event_type,
-        start_date: startDateTime.toISOString(),
-        end_date: endDateTime ? endDateTime.toISOString() : null,
-        location: data.location,
-        description: data.description,
-        required_degree: parseInt(data.required_degree),
-        dress_code: data.dress_code,
-        agenda: data.agenda,
-        notes: data.notes,
-        attendees: selectedMembers,
-        notify_members: data.notify_members
+        ...data,
+        attendees: selectedMembers
       };
       
       if (eventId) {
-        // Modo edición
         await communicationsService.updateEvent(eventId, eventData);
       } else {
-        // Modo creación
         await communicationsService.createEvent(eventData);
       }
       
-      navigate('/communications/events');
+      navigate('/events');
     } catch (error) {
       console.error('Error al guardar evento:', error);
-      alert('Ha ocurrido un error al guardar el evento. Por favor, inténtelo de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -165,244 +145,368 @@ const EventForm = ({ eventId = null }) => {
   
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/communications/events')}
-          className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-900"
-        >
-          <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Volver al calendario
-        </button>
+      {/* Encabezado */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {eventId ? 'Editar evento' : 'Crear nuevo evento'}
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {eventId ? 'Modifica los detalles del evento' : 'Completa el formulario para crear un nuevo evento'}
+          </p>
+        </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {eventId ? 'Editar Evento' : 'Crear Nuevo Evento'}
-          </h1>
-        </div>
-        
-        <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Información básica */}
-            <div className="space-y-6">
-              <div>
+      {/* Formulario */}
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+              {/* Título */}
+              <div className="sm:col-span-4">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                  Título del evento *
+                  Título *
                 </label>
-                <input
-                  type="text"
-                  id="title"
-                  {...register('title', { required: 'El título es obligatorio' })}
-                  className={`mt-1 block w-full rounded-md shadow-sm ${
-                    errors.title ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'
-                  }`}
-                />
-                {errors.title && (
-                  <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
-                )}
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    id="title"
+                    {...register('title', { required: 'El título es obligatorio' })}
+                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
+                      errors.title ? 'border-red-300' : ''
+                    }`}
+                  />
+                  {errors.title && (
+                    <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+                  )}
+                </div>
               </div>
               
-              <div>
+              {/* Tipo de evento */}
+              <div className="sm:col-span-2">
                 <label htmlFor="event_type" className="block text-sm font-medium text-gray-700">
-                  Tipo de evento *
+                  Tipo de evento
                 </label>
-                <select
-                  id="event_type"
-                  {...register('event_type', { required: 'El tipo de evento es obligatorio' })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  <option value="regular">Tenida Regular</option>
-                  <option value="instruction">Instrucción</option>
-                  <option value="ceremony">Ceremonia</option>
-                  <option value="social">Evento Social</option>
-                  <option value="committee">Comité</option>
-                </select>
+                <div className="mt-1">
+                  <select
+                    id="event_type"
+                    {...register('event_type')}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  >
+                    <option value="regular">Tenida Regular</option>
+                    <option value="special">Tenida Especial</option>
+                    <option value="white">Tenida Blanca</option>
+                    <option value="instruction">Instrucción</option>
+                    <option value="social">Evento Social</option>
+                    <option value="other">Otro</option>
+                  </select>
+                </div>
               </div>
               
-              <div>
-                <label htmlFor="required_degree" className="block text-sm font-medium text-gray-700">
-                  Grado requerido *
-                </label>
-                <select
-                  id="required_degree"
-                  {...register('required_degree', { required: 'El grado requerido es obligatorio' })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  <option value="1">Aprendiz (1°)</option>
-                  <option value="2">Compañero (2°)</option>
-                  <option value="3">Maestro (3°)</option>
-                </select>
-              </div>
-              
-              <div>
+              {/* Fecha de inicio */}
+              <div className="sm:col-span-3">
                 <label htmlFor="start_date" className="block text-sm font-medium text-gray-700">
                   Fecha de inicio *
                 </label>
-                <input
-                  type="date"
-                  id="start_date"
-                  {...register('start_date', { required: 'La fecha de inicio es obligatoria' })}
-                  className={`mt-1 block w-full rounded-md shadow-sm ${
-                    errors.start_date ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'
-                  }`}
-                />
-                {errors.start_date && (
-                  <p className="mt-1 text-sm text-red-600">{errors.start_date.message}</p>
-                )}
+                <div className="mt-1">
+                  <input
+                    type="date"
+                    id="start_date"
+                    {...register('start_date', { required: 'La fecha de inicio es obligatoria' })}
+                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
+                      errors.start_date ? 'border-red-300' : ''
+                    }`}
+                  />
+                  {errors.start_date && (
+                    <p className="mt-1 text-sm text-red-600">{errors.start_date.message}</p>
+                  )}
+                </div>
               </div>
               
-              <div>
+              {/* Hora de inicio */}
+              <div className="sm:col-span-3">
                 <label htmlFor="start_time" className="block text-sm font-medium text-gray-700">
                   Hora de inicio *
                 </label>
-                <input
-                  type="time"
-                  id="start_time"
-                  {...register('start_time', { required: 'La hora de inicio es obligatoria' })}
-                  className={`mt-1 block w-full rounded-md shadow-sm ${
-                    errors.start_time ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'
-                  }`}
-                />
-                {errors.start_time && (
-                  <p className="mt-1 text-sm text-red-600">{errors.start_time.message}</p>
-                )}
+                <div className="mt-1">
+                  <input
+                    type="time"
+                    id="start_time"
+                    {...register('start_time', { required: 'La hora de inicio es obligatoria' })}
+                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
+                      errors.start_time ? 'border-red-300' : ''
+                    }`}
+                  />
+                  {errors.start_time && (
+                    <p className="mt-1 text-sm text-red-600">{errors.start_time.message}</p>
+                  )}
+                </div>
               </div>
               
-              <div>
+              {/* Fecha de finalización */}
+              <div className="sm:col-span-3">
                 <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">
                   Fecha de finalización
                 </label>
-                <input
-                  type="date"
-                  id="end_date"
-                  {...register('end_date')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
+                <div className="mt-1">
+                  <input
+                    type="date"
+                    id="end_date"
+                    {...register('end_date')}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
               </div>
               
-              <div>
+              {/* Hora de finalización */}
+              <div className="sm:col-span-3">
                 <label htmlFor="end_time" className="block text-sm font-medium text-gray-700">
                   Hora de finalización
                 </label>
-                <input
-                  type="time"
-                  id="end_time"
-                  {...register('end_time')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
+                <div className="mt-1">
+                  <input
+                    type="time"
+                    id="end_time"
+                    {...register('end_time')}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
               </div>
               
-              <div>
+              {/* Ubicación */}
+              <div className="sm:col-span-3">
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                  Ubicación *
+                  Ubicación
                 </label>
-                <input
-                  type="text"
-                  id="location"
-                  {...register('location', { required: 'La ubicación es obligatoria' })}
-                  className={`mt-1 block w-full rounded-md shadow-sm ${
-                    errors.location ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'
-                  }`}
-                />
-                {errors.location && (
-                  <p className="mt-1 text-sm text-red-600">{errors.location.message}</p>
-                )}
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    id="location"
+                    {...register('location')}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
               </div>
               
-              <div>
+              {/* Grado requerido */}
+              <div className="sm:col-span-3">
+                <label htmlFor="required_degree" className="block text-sm font-medium text-gray-700">
+                  Grado requerido
+                </label>
+                <div className="mt-1">
+                  <select
+                    id="required_degree"
+                    {...register('required_degree')}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  >
+                    <option value="1">1° Aprendiz</option>
+                    <option value="2">2° Compañero</option>
+                    <option value="3">3° Maestro</option>
+                  </select>
+                </div>
+              </div>
+              
+              {/* Código de vestimenta */}
+              <div className="sm:col-span-3">
                 <label htmlFor="dress_code" className="block text-sm font-medium text-gray-700">
                   Código de vestimenta
                 </label>
-                <input
-                  type="text"
-                  id="dress_code"
-                  {...register('dress_code')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
+                <div className="mt-1">
+                  <select
+                    id="dress_code"
+                    {...register('dress_code')}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  >
+                    <option value="Formal">Formal</option>
+                    <option value="Semi-formal">Semi-formal</option>
+                    <option value="Casual">Casual</option>
+                    <option value="Traje oscuro">Traje oscuro</option>
+                    <option value="Tenida de gala">Tenida de gala</option>
+                  </select>
+                </div>
               </div>
-            </div>
-            
-            {/* Detalles adicionales */}
-            <div className="space-y-6">
-              <div>
+              
+              {/* Descripción */}
+              <div className="sm:col-span-6">
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700">
                   Descripción
                 </label>
-                <textarea
-                  id="description"
-                  rows={3}
-                  {...register('description')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
+                <div className="mt-1">
+                  <textarea
+                    id="description"
+                    rows={3}
+                    {...register('description')}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Breve descripción del evento.
+                </p>
               </div>
               
-              <div>
+              {/* Agenda */}
+              <div className="sm:col-span-6">
                 <label htmlFor="agenda" className="block text-sm font-medium text-gray-700">
                   Agenda
                 </label>
-                <textarea
-                  id="agenda"
-                  rows={3}
-                  {...register('agenda')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
+                <div className="mt-1">
+                  <textarea
+                    id="agenda"
+                    rows={3}
+                    {...register('agenda')}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Agenda detallada del evento.
+                </p>
               </div>
               
-              <div>
+              {/* Notas adicionales */}
+              <div className="sm:col-span-6">
                 <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
                   Notas adicionales
                 </label>
-                <textarea
-                  id="notes"
-                  rows={3}
-                  {...register('notes')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
+                <div className="mt-1">
+                  <textarea
+                    id="notes"
+                    rows={3}
+                    {...register('notes')}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Información adicional para los asistentes.
+                </p>
               </div>
               
-              <div>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium text-gray-900">Invitar miembros</h3>
-                  <div className="flex space-x-2">
-                    <button
-                      type="button"
-                      onClick={handleSelectAllMembers}
-                      className="text-sm text-indigo-600 hover:text-indigo-900"
-                    >
-                      Seleccionar todos
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDeselectAllMembers}
-                      className="text-sm text-indigo-600 hover:text-indigo-900"
-                    >
-                      Deseleccionar todos
-                    </button>
+              {/* Notificar a miembros */}
+              <div className="sm:col-span-6">
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="notify_members"
+                      type="checkbox"
+                      {...register('notify_members')}
+                      className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label htmlFor="notify_members" className="font-medium text-gray-700">
+                      Notificar a miembros
+                    </label>
+                    <p className="text-gray-500">
+                      Enviar notificaciones por correo electrónico a los miembros invitados.
+                    </p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Selección de miembros */}
+        <div className="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">Invitar miembros</h3>
+            <div className="mt-2 max-w-xl text-sm text-gray-500">
+              <p>Selecciona los miembros que deseas invitar a este evento.</p>
+            </div>
+            
+            <div className="mt-4">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-sm text-gray-500">
+                  {selectedMembers.length} de {members.length} miembros seleccionados
+                </div>
+                <div className="flex space-x-4">
+                  <button
+                    type="button"
+                    onClick={handleSelectAllMembers}
+                    className="text-sm text-indigo-600 hover:text-indigo-900"
+                  >
+                    Seleccionar todos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeselectAllMembers}
+                    className="text-sm text-indigo-600 hover:text-indigo-900"
+                  >
+                    Deseleccionar todos
+                  </button>
+                </div>
+              </div>
                 
-                <div className="mt-2 max-h-60 overflow-y-auto border border-gray-300 rounded-md p-2">
-                  {members.length === 0 ? (
-                    <p className="text-sm text-gray-500 p-2">
-                      No hay miembros disponibles para el grado seleccionado.
-                    </p>
-                  ) : (
-                    <ul className="divide-y divide-gray-200">
-                      {members.map((member) => (
-                        <li key={member.id} className="py-2">
-                          <div className="flex items-center">
-                           
-(Content truncated due to size limit. Use line ranges to read in chunks)
+              <div className="mt-2 max-h-60 overflow-y-auto border border-gray-300 rounded-md p-2">
+                {members.length === 0 ? (
+                  <p className="text-sm text-gray-500 p-2">
+                    No hay miembros disponibles para el grado seleccionado.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-gray-200">
+                    {members.map((member) => (
+                      <li key={member.id} className="py-2">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`member-${member.id}`}
+                            checked={selectedMembers.includes(member.id)}
+                            onChange={() => handleMemberSelection(member.id)}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor={`member-${member.id}`} className="ml-3 block text-sm font-medium text-gray-700">
+                            {member.name}
+                            {member.office && (
+                              <span className="ml-2 text-sm text-gray-500">({member.office})</span>
+                            )}
+                          </label>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Botones de acción */}
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={() => navigate('/events')}
+            className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            {submitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Guardando...
+              </>
+            ) : (
+              'Guardar evento'
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default EventForm;

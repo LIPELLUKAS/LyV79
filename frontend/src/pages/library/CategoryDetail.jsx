@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { libraryService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
-
 const CategoryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -59,129 +58,6 @@ const CategoryDetail = () => {
     }
   };
   
-  // Renderizar badge de grado requerido
-  const renderRequiredDegreeBadge = (degree) => {
-    switch (degree) {
-      case 1:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            Aprendiz
-          </span>
-        );
-      case 2:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            Compañero
-          </span>
-        );
-      case 3:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            Maestro
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
-  
-  // Renderizar badge de tipo de documento
-  const renderDocumentTypeBadge = (type) => {
-    switch (type) {
-      case 'book':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            Libro
-          </span>
-        );
-      case 'article':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Artículo
-          </span>
-        );
-      case 'lecture':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-            Plancha
-          </span>
-        );
-      case 'ritual':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            Ritual
-          </span>
-        );
-      case 'constitution':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            Constitución
-          </span>
-        );
-      case 'regulation':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-            Reglamento
-          </span>
-        );
-      case 'history':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
-            Historia
-          </span>
-        );
-      case 'symbolism':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-            Simbolismo
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            Otro
-          </span>
-        );
-    }
-  };
-  
-  // Renderizar estrellas para calificación
-  const renderRatingStars = (rating) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    
-    return (
-      <div className="flex items-center">
-        {[...Array(fullStars)].map((_, i) => (
-          <svg key={`full-${i}`} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        ))}
-        
-        {hasHalfStar && (
-          <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-            <defs>
-              <linearGradient id="half-star-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="50%" stopColor="currentColor" />
-                <stop offset="50%" stopColor="#D1D5DB" />
-              </linearGradient>
-            </defs>
-            <path fill="url(#half-star-gradient)" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        )}
-        
-        {[...Array(emptyStars)].map((_, i) => (
-          <svg key={`empty-${i}`} className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        ))}
-        
-        <span className="ml-1 text-sm text-gray-500">({rating.toFixed(1)})</span>
-      </div>
-    );
-  };
-  
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -192,7 +68,7 @@ const CategoryDetail = () => {
   
   if (!category) {
     return (
-      <div className="bg-white shadow rounded-lg p-6 text-center">
+      <div className="bg-white rounded-lg shadow p-6 text-center">
         <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -205,7 +81,7 @@ const CategoryDetail = () => {
             onClick={() => navigate('/library/categories')}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Volver a categorías
+            Volver a la lista
           </button>
         </div>
       </div>
@@ -227,71 +103,38 @@ const CategoryDetail = () => {
               </svg>
             </button>
             <h1 className="text-2xl font-bold text-gray-900">{category.name}</h1>
-            <div className="ml-2">
-              {renderRequiredDegreeBadge(category.required_degree)}
-            </div>
           </div>
-          {category.parent && (
-            <p className="mt-2 text-sm text-gray-500">
-              <button 
-                onClick={() => navigate('/library/categories')}
-                className="text-indigo-600 hover:text-indigo-500"
-              >
-                Categorías
-              </button>
-              {' > '}
-              <button 
-                onClick={() => navigate(`/library/categories/${category.parent}`)}
-                className="text-indigo-600 hover:text-indigo-500"
-              >
-                Categoría padre
-              </button>
-              {' > '}
-              {category.name}
+          {category.parent_name && (
+            <p className="mt-1 text-sm text-gray-500">
+              Subcategoría de{' '}
+              <Link to={`/library/categories/${category.parent_id}`} className="text-indigo-600 hover:text-indigo-900">
+                {category.parent_name}
+              </Link>
             </p>
           )}
         </div>
+        
         <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
-          {currentUser.degree === 3 && (
-            <>
-              <Link
-                to={`/library/categories/new?parent_id=${category.id}`}
-                className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Añadir subcategoría
-              </Link>
-              <Link
-                to={`/library/documents/new?category_id=${category.id}`}
-                className="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                Subir documento
-              </Link>
-              <Link
-                to={`/library/categories/${category.id}/edit`}
-                className="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-              >
-                Editar
-              </Link>
-              <button
-                onClick={handleDeleteCategory}
-                className="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                Eliminar
-              </button>
-            </>
-          )}
+          <button
+            onClick={() => navigate(`/library/categories/${id}/edit`)}
+            className="px-4 py-2 bg-white border border-gray-300 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Editar
+          </button>
+          <button
+            onClick={handleDeleteCategory}
+            className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Eliminar
+          </button>
         </div>
       </div>
       
-      {/* Detalles de la categoría */}
+      {/* Información de la categoría */}
       <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
         <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Detalles de la categoría
-          </h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            Información detallada sobre esta categoría.
-          </p>
+          <h3 className="text-lg leading-6 font-medium text-gray-900">Información de la categoría</h3>
+          <p className="mt-1 max-w-2xl text-sm text-gray-500">Detalles y propiedades</p>
         </div>
         <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
           <dl className="sm:divide-y sm:divide-gray-200">
@@ -306,19 +149,11 @@ const CategoryDetail = () => {
               </dd>
             </div>
             <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Grado requerido</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {category.required_degree === 1 && 'Aprendiz (1°)'}
-                {category.required_degree === 2 && 'Compañero (2°)'}
-                {category.required_degree === 3 && 'Maestro (3°)'}
-              </dd>
-            </div>
-            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-500">Categoría padre</dt>
               <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {category.parent ? (
-                  <Link to={`/library/categories/${category.parent}`} className="text-indigo-600 hover:text-indigo-500">
-                    Ver categoría padre
+                {category.parent_name ? (
+                  <Link to={`/library/categories/${category.parent_id}`} className="text-indigo-600 hover:text-indigo-900">
+                    {category.parent_name}
                   </Link>
                 ) : (
                   'Categoría principal'
@@ -326,9 +161,9 @@ const CategoryDetail = () => {
               </dd>
             </div>
             <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Creada por</dt>
+              <dt className="text-sm font-medium text-gray-500">Creado por</dt>
               <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {category.created_by_name || 'Usuario desconocido'}
+                {category.created_by_name || 'Desconocido'}
               </dd>
             </div>
             <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -358,5 +193,151 @@ const CategoryDetail = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
           >
-            D
-(Content truncated due to size limit. Use line ranges to read in chunks)
+            Documentos
+          </button>
+          <button
+            onClick={() => setActiveTab('subcategories')}
+            className={`${
+              activeTab === 'subcategories'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            Subcategorías
+          </button>
+        </nav>
+      </div>
+      
+      {/* Contenido de la pestaña activa */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        {activeTab === 'documents' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-medium text-gray-900">Documentos en esta categoría</h2>
+              <Link
+                to={`/library/documents/new?category=${id}`}
+                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Añadir documento
+              </Link>
+            </div>
+            
+            {documents.length > 0 ? (
+              <ul className="divide-y divide-gray-200">
+                {documents.map((document) => (
+                  <li key={document.id} className="py-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          to={`/library/documents/${document.id}`}
+                          className="text-sm font-medium text-indigo-600 hover:text-indigo-900 truncate"
+                        >
+                          {document.title}
+                        </Link>
+                        <p className="text-sm text-gray-500 truncate">{document.description}</p>
+                      </div>
+                      <div className="flex-shrink-0 flex items-center space-x-2">
+                        <span className="text-sm text-gray-500">
+                          {new Date(document.updated_at).toLocaleDateString()}
+                        </span>
+                        <Link
+                          to={`/library/documents/${document.id}`}
+                          className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Ver
+                        </Link>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No hay documentos</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Aún no hay documentos en esta categoría.
+                </p>
+                <div className="mt-6">
+                  <Link
+                    to={`/library/documents/new?category=${id}`}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Añadir documento
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'subcategories' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-medium text-gray-900">Subcategorías</h2>
+              <Link
+                to={`/library/categories/new?parent=${id}`}
+                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Añadir subcategoría
+              </Link>
+            </div>
+            
+            {subcategories.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {subcategories.map((subcategory) => (
+                  <div
+                    key={subcategory.id}
+                    className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                  >
+                    <div className="flex-shrink-0">
+                      <svg className="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Link to={`/library/categories/${subcategory.id}`} className="focus:outline-none">
+                        <span className="absolute inset-0" aria-hidden="true" />
+                        <p className="text-sm font-medium text-gray-900">{subcategory.name}</p>
+                        <p className="text-sm text-gray-500 truncate">
+                          {subcategory.document_count} documentos
+                        </p>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No hay subcategorías</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Aún no hay subcategorías en esta categoría.
+                </p>
+                <div className="mt-6">
+                  <Link
+                    to={`/library/categories/new?parent=${id}`}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Añadir subcategoría
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default CategoryDetail;

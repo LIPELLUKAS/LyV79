@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ritualsService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
-
 const RitualWorks = () => {
   const { planId, workId } = useParams();
   const navigate = useNavigate();
@@ -54,46 +53,46 @@ const RitualWorks = () => {
     };
     
     fetchRitualPlan();
-  }, [planId, navigate, showNotification, isEditMode]);
+  }, [planId, isEditMode, navigate, showNotification]);
   
   // Cargar datos del trabajo si estamos en modo edición
   useEffect(() => {
     const fetchWorkData = async () => {
-      if (isEditMode) {
-        try {
-          setLoading(true);
-          const response = await ritualsService.getRitualWorkById(workId);
-          setFormData({
-            title: response.data.title,
-            description: response.data.description || '',
-            work_type: response.data.work_type,
-            responsible: response.data.responsible || '',
-            estimated_duration: response.data.estimated_duration || 15,
-            order: response.data.order || 1,
-            attachment: response.data.attachment || null,
-            status: response.data.status
-          });
-        } catch (error) {
-          console.error('Error al cargar el trabajo ritual:', error);
-          showNotification('Error al cargar el trabajo ritual', 'error');
-        } finally {
-          setLoading(false);
-        }
+      if (!isEditMode) return;
+      
+      try {
+        setLoading(true);
+        const response = await ritualsService.getRitualWorkById(workId);
+        const work = response.data;
+        
+        setFormData({
+          title: work.title || '',
+          description: work.description || '',
+          work_type: work.work_type || 'lecture',
+          responsible: work.responsible || '',
+          estimated_duration: work.estimated_duration || 15,
+          order: work.order || 1,
+          status: work.status || 'pending',
+          attachment: null // No podemos cargar el archivo existente, solo el nombre
+        });
+      } catch (error) {
+        console.error('Error al cargar el trabajo:', error);
+        showNotification('Error al cargar el trabajo', 'error');
+        navigate(`/rituals/plans/${planId}`);
+      } finally {
+        setLoading(false);
       }
     };
     
     fetchWorkData();
-  }, [workId, isEditMode, showNotification]);
+  }, [workId, isEditMode, planId, navigate, showNotification]);
   
-  // Cargar miembros disponibles
+  // Cargar miembros para el selector de responsables
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        // Aquí se debería llamar a un servicio para obtener los miembros
-        // Por ahora, usamos datos de ejemplo
-        const response = await fetch('/api/members?degree=3');
-        const data = await response.json();
-        setMembers(data.results);
+        const response = await ritualsService.getLodgeMembers();
+        setMembers(response.data);
       } catch (error) {
         console.error('Error al cargar miembros:', error);
       }
@@ -107,27 +106,28 @@ const RitualWorks = () => {
     const { name, value, type, files } = e.target;
     
     if (type === 'file') {
-      setFormData(prevData => ({
-        ...prevData,
-        [name]: files[0]
+      setFormData(prev => ({
+        ...prev,
+        [name]: files[0] || null
       }));
     } else {
-      setFormData(prevData => ({
-        ...prevData,
+      setFormData(prev => ({
+        ...prev,
         [name]: value
       }));
     }
   };
   
-  // Enviar el formulario
+  // Enviar formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
       setSubmitting(true);
       
-      // Crear un FormData para manejar la carga de archivos
       const formDataToSend = new FormData();
+      
+      // Añadir todos los campos al FormData
       Object.keys(formData).forEach(key => {
         if (formData[key] !== null) {
           formDataToSend.append(key, formData[key]);
@@ -139,16 +139,16 @@ const RitualWorks = () => {
       
       if (isEditMode) {
         await ritualsService.updateRitualWork(workId, formDataToSend);
-        showNotification('Trabajo ritual actualizado correctamente', 'success');
+        showNotification('Trabajo actualizado correctamente', 'success');
       } else {
         await ritualsService.createRitualWork(formDataToSend);
-        showNotification('Trabajo ritual creado correctamente', 'success');
+        showNotification('Trabajo creado correctamente', 'success');
       }
       
       navigate(`/rituals/plans/${planId}`);
     } catch (error) {
-      console.error('Error al guardar el trabajo ritual:', error);
-      showNotification('Error al guardar el trabajo ritual', 'error');
+      console.error('Error al guardar el trabajo:', error);
+      showNotification('Error al guardar el trabajo', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -158,28 +158,6 @@ const RitualWorks = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
-  
-  if (!ritualPlan) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6 text-center">
-        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">Plan ritual no encontrado</h3>
-        <p className="mt-1 text-sm text-gray-500">
-          El plan ritual que estás buscando no existe o no tienes permisos para verlo.
-        </p>
-        <div className="mt-6">
-          <button
-            onClick={() => navigate('/rituals/plans')}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Volver a la lista
-          </button>
-        </div>
       </div>
     );
   }
@@ -196,64 +174,48 @@ const RitualWorks = () => {
           </svg>
         </button>
         <h1 className="text-2xl font-bold text-gray-900">
-          {isEditMode ? 'Editar trabajo ritual' : 'Añadir trabajo ritual'}
+          {isEditMode ? 'Editar trabajo' : 'Nuevo trabajo'}
         </h1>
       </div>
       
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 bg-gray-50">
-          <h3 className="text-lg font-medium leading-6 text-gray-900">
-            Plan ritual: {ritualPlan.title}
-          </h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            Fecha: {new Date(ritualPlan.date).toLocaleDateString()} | Tipo: {ritualPlan.ritual_type_display}
-          </p>
+      {ritualPlan && (
+        <div className="mb-6 bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:px-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Plan ritual: {ritualPlan.title}
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-gray-500">
+              {ritualPlan.date && new Date(ritualPlan.date).toLocaleDateString()}
+            </p>
+          </div>
         </div>
-        
-        <form onSubmit={handleSubmit} className="p-6">
+      )}
+      
+      <form onSubmit={handleSubmit} className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div className="px-4 py-5 sm:p-6">
           <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
             {/* Título */}
-            <div className="sm:col-span-6">
+            <div className="sm:col-span-4">
               <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                Título <span className="text-red-500">*</span>
+                Título *
               </label>
               <div className="mt-1">
                 <input
                   type="text"
                   name="title"
                   id="title"
+                  required
                   value={formData.title}
                   onChange={handleChange}
-                  required
                   className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 />
               </div>
-            </div>
-            
-            {/* Descripción */}
-            <div className="sm:col-span-6">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Descripción
-              </label>
-              <div className="mt-1">
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={3}
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                />
-              </div>
-              <p className="mt-2 text-sm text-gray-500">
-                Breve descripción del trabajo ritual.
-              </p>
             </div>
             
             {/* Tipo de trabajo */}
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-2">
               <label htmlFor="work_type" className="block text-sm font-medium text-gray-700">
-                Tipo de trabajo <span className="text-red-500">*</span>
+                Tipo de trabajo
               </label>
               <div className="mt-1">
                 <select
@@ -261,13 +223,12 @@ const RitualWorks = () => {
                   name="work_type"
                   value={formData.work_type}
                   onChange={handleChange}
-                  required
                   className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 >
                   <option value="lecture">Plancha</option>
-                  <option value="ceremony">Ceremonia</option>
+                  <option value="ritual">Ritual</option>
+                  <option value="instruction">Instrucción</option>
                   <option value="discussion">Discusión</option>
-                  <option value="presentation">Presentación</option>
                   <option value="other">Otro</option>
                 </select>
               </div>
@@ -286,10 +247,10 @@ const RitualWorks = () => {
                   onChange={handleChange}
                   className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 >
-                  <option value="">No asignado</option>
+                  <option value="">Seleccionar responsable</option>
                   {members.map(member => (
                     <option key={member.id} value={member.id}>
-                      {member.symbolic_name || `${member.first_name} ${member.last_name}`}
+                      {member.name} {member.office ? `(${member.office})` : ''}
                     </option>
                   ))}
                 </select>
@@ -299,7 +260,7 @@ const RitualWorks = () => {
             {/* Duración estimada */}
             <div className="sm:col-span-3">
               <label htmlFor="estimated_duration" className="block text-sm font-medium text-gray-700">
-                Duración estimada (minutos) <span className="text-red-500">*</span>
+                Duración estimada (minutos)
               </label>
               <div className="mt-1">
                 <input
@@ -307,18 +268,18 @@ const RitualWorks = () => {
                   name="estimated_duration"
                   id="estimated_duration"
                   min="1"
+                  max="180"
                   value={formData.estimated_duration}
                   onChange={handleChange}
-                  required
                   className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 />
               </div>
             </div>
             
             {/* Orden */}
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-2">
               <label htmlFor="order" className="block text-sm font-medium text-gray-700">
-                Orden <span className="text-red-500">*</span>
+                Orden
               </label>
               <div className="mt-1">
                 <input
@@ -328,45 +289,15 @@ const RitualWorks = () => {
                   min="1"
                   value={formData.order}
                   onChange={handleChange}
-                  required
                   className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 />
               </div>
-              <p className="mt-2 text-sm text-gray-500">
-                Posición en la agenda del ritual.
-              </p>
-            </div>
-            
-            {/* Adjunto */}
-            <div className="sm:col-span-6">
-              <label htmlFor="attachment" className="block text-sm font-medium text-gray-700">
-                Adjunto
-              </label>
-              <div className="mt-1">
-                <input
-                  type="file"
-                  name="attachment"
-                  id="attachment"
-                  onChange={handleChange}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                />
-              </div>
-              <p className="mt-2 text-sm text-gray-500">
-                Documento relacionado con este trabajo (opcional).
-              </p>
-              {formData.attachment && typeof formData.attachment === 'string' && (
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    Archivo actual: <a href={formData.attachment} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-500">Ver archivo</a>
-                  </p>
-                </div>
-              )}
             </div>
             
             {/* Estado */}
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-2">
               <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-                Estado <span className="text-red-500">*</span>
+                Estado
               </label>
               <div className="mt-1">
                 <select
@@ -374,14 +305,82 @@ const RitualWorks = () => {
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  required
                   className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 >
                   <option value="pending">Pendiente</option>
-                  <option value="confirmed">Confirmado</option>
+                  <option value="in_progress">En progreso</option>
                   <option value="completed">Completado</option>
                   <option value="cancelled">Cancelado</option>
                 </select>
+              </div>
+            </div>
+            
+            {/* Descripción */}
+            <div className="sm:col-span-6">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Descripción
+              </label>
+              <div className="mt-1">
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={4}
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                />
+              </div>
+              <p className="mt-2 text-sm text-gray-500">
+                Breve descripción del trabajo a realizar.
+              </p>
+            </div>
+            
+            {/* Archivo adjunto */}
+            <div className="sm:col-span-6">
+              <label htmlFor="attachment" className="block text-sm font-medium text-gray-700">
+                Archivo adjunto
+              </label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                <div className="space-y-1 text-center">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    stroke="currentColor"
+                    fill="none"
+                    viewBox="0 0 48 48"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <div className="flex text-sm text-gray-600">
+                    <label
+                      htmlFor="attachment"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                    >
+                      <span>Subir un archivo</span>
+                      <input
+                        id="attachment"
+                        name="attachment"
+                        type="file"
+                        className="sr-only"
+                        onChange={handleChange}
+                      />
+                    </label>
+                    <p className="pl-1">o arrastrar y soltar</p>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    PDF, DOC, DOCX, PPT, PPTX hasta 10MB
+                  </p>
+                  {formData.attachment && (
+                    <p className="text-sm text-indigo-600">
+                      Archivo seleccionado: {formData.attachment.name}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -402,5 +401,20 @@ const RitualWorks = () => {
               {submitting ? (
                 <span className="flex items-center">
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="
-(Content truncated due to size limit. Use line ranges to read in chunks)
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Guardando...
+                </span>
+              ) : (
+                'Guardar'
+              )}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default RitualWorks;

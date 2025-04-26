@@ -400,4 +400,308 @@ const RitualPlanDetail = () => {
                     <p>{ritualPlan.description}</p>
                   ) : (
                     <p className="italic">No hay descripción disponible</p>
-(Content truncated due to size limit. Use line ranges to read in chunks)
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-8">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Notas adicionales</h2>
+              <div className="prose prose-sm max-w-none text-gray-500">
+                {ritualPlan.notes ? (
+                  <p>{ritualPlan.notes}</p>
+                ) : (
+                  <p className="italic">No hay notas adicionales</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'roles' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-medium text-gray-900">Asignación de roles</h2>
+              {canEdit && (ritualPlan.status === 'draft' || ritualPlan.status === 'approved') && (
+                <button
+                  onClick={() => navigate(`/rituals/plans/${id}/roles/edit`)}
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Editar roles
+                </button>
+              )}
+            </div>
+            
+            {ritualPlan.roles && ritualPlan.roles.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rol
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Miembro
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estado
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {ritualPlan.roles.map((role) => (
+                      <tr key={role.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {role.role_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {role.member_name || 'No asignado'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {role.status === 'confirmed' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Confirmado
+                            </span>
+                          ) : role.status === 'pending' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              Pendiente
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              No asignado
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No hay roles asignados</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Aún no se han asignado roles para este plan ritual.
+                </p>
+                {canEdit && (ritualPlan.status === 'draft' || ritualPlan.status === 'approved') && (
+                  <div className="mt-6">
+                    <button
+                      onClick={() => navigate(`/rituals/plans/${id}/roles/edit`)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Asignar roles
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'works' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-medium text-gray-900">Trabajos planificados</h2>
+              {canEdit && (ritualPlan.status === 'draft' || ritualPlan.status === 'approved') && (
+                <button
+                  onClick={() => navigate(`/rituals/plans/${id}/works/edit`)}
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Editar trabajos
+                </button>
+              )}
+            </div>
+            
+            {ritualPlan.works && ritualPlan.works.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Título
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Presentador
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Duración
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estado
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {ritualPlan.works.map((work) => (
+                      <tr key={work.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {work.title}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {work.presenter_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {work.duration} minutos
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {work.status === 'confirmed' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Confirmado
+                            </span>
+                          ) : work.status === 'pending' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              Pendiente
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              Borrador
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No hay trabajos planificados</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Aún no se han planificado trabajos para este ritual.
+                </p>
+                {canEdit && (ritualPlan.status === 'draft' || ritualPlan.status === 'approved') && (
+                  <div className="mt-6">
+                    <button
+                      onClick={() => navigate(`/rituals/plans/${id}/works/edit`)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Añadir trabajos
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'attachments' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-medium text-gray-900">Documentos adjuntos</h2>
+              {canEdit && (ritualPlan.status === 'draft' || ritualPlan.status === 'approved') && (
+                <button
+                  onClick={() => navigate(`/rituals/plans/${id}/attachments/edit`)}
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Gestionar adjuntos
+                </button>
+              )}
+            </div>
+            
+            {ritualPlan.attachments && ritualPlan.attachments.length > 0 ? (
+              <ul className="divide-y divide-gray-200">
+                {ritualPlan.attachments.map((attachment) => (
+                  <li key={attachment.id} className="py-4 flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">{attachment.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {attachment.file_type} • {attachment.file_size}
+                      </p>
+                    </div>
+                    <div className="ml-auto flex-shrink-0">
+                      <a
+                        href={attachment.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-indigo-600 hover:text-indigo-500"
+                      >
+                        Descargar
+                      </a>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No hay documentos adjuntos</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Aún no se han adjuntado documentos a este plan ritual.
+                </p>
+                {canEdit && (ritualPlan.status === 'draft' || ritualPlan.status === 'approved') && (
+                  <div className="mt-6">
+                    <button
+                      onClick={() => navigate(`/rituals/plans/${id}/attachments/edit`)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Añadir documentos
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'minutes' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-medium text-gray-900">Acta del ritual</h2>
+              {canEdit && ritualPlan.status === 'completed' && (
+                <button
+                  onClick={() => navigate(`/rituals/plans/${id}/minutes/edit`)}
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  {ritualPlan.has_minutes ? 'Editar acta' : 'Crear acta'}
+                </button>
+              )}
+            </div>
+            
+            {ritualPlan.has_minutes ? (
+              <div className="prose prose-sm max-w-none text-gray-500">
+                <div dangerouslySetInnerHTML={{ __html: ritualPlan.minutes_content }} />
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No hay acta disponible</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {ritualPlan.status === 'completed'
+                    ? 'El ritual ha sido completado pero aún no se ha creado el acta.'
+                    : 'El acta estará disponible una vez que el ritual haya sido completado.'}
+                </p>
+                {canEdit && ritualPlan.status === 'completed' && (
+                  <div className="mt-6">
+                    <button
+                      onClick={() => navigate(`/rituals/plans/${id}/minutes/edit`)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Crear acta
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default RitualPlanDetail;
