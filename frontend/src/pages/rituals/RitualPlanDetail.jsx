@@ -399,5 +399,5 @@ const RitualPlanDetail = () => {
                   {ritualPlan.description ? (
                     <p>{ritualPlan.description}</p>
                   ) : (
-                    <p className="italic">No hay descripción dis
+                    <p className="italic">No hay descripción disponible</p>
 (Content truncated due to size limit. Use line ranges to read in chunks)
