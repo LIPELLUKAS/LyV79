@@ -439,3 +439,97 @@ sudo systemctl restart nginx
 Para asistencia técnica, contacte a soporte@luzyverda.org o llame al +1-234-567-8900.
 
 © 2025 Sistema de Gestión Masónica "Luz y Verdad". Todos los derechos reservados.
+
+
+
+## Instalación para Desarrollo Local (Sin Docker)
+
+Esta sección describe cómo configurar el proyecto para desarrollo en su máquina local sin usar Docker.
+
+### 1. Requisitos Previos Locales
+
+- **Python**: 3.10 o superior
+- **Node.js**: 16.x o superior (con npm)
+- **PostgreSQL**: Instalado y en ejecución localmente
+- **Git**: Para clonar el repositorio
+
+### 2. Clonar el Repositorio
+
+```bash
+git clone https://github.com/LIPELLUKAS/LyV79.git
+cd LyV79
+```
+
+### 3. Configuración del Backend (Django)
+
+1.  **Navegue hasta la carpeta del backend**:
+    ```bash
+    cd backend
+    ```
+2.  **Cree y active un entorno virtual Python**:
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate  # En Windows: venv\Scripts\activate
+    ```
+3.  **Instale las dependencias**: Asegúrese de que `phonenumbers` esté en `requirements.txt`.
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  **Configure el archivo `.env` local**: Copie el archivo de ejemplo y edítelo.
+    ```bash
+    cp ../.env.local.example .env 
+    nano .env # o use su editor preferido
+    ```
+    **Importante**: Asegúrese de que las variables `DB_USER`, `DB_PASSWORD`, `DB_HOST` (generalmente `localhost` o `127.0.0.1`), y `DB_PORT` (generalmente `5432`) en el archivo `.env` coincidan con la configuración de su servidor PostgreSQL local.
+
+5.  **Configure el banco de datos PostgreSQL local**: 
+    - Asegúrese de que el servidor PostgreSQL esté en ejecución.
+    - Cree un usuario y una base de datos con los nombres y credenciales especificados en su archivo `.env`.
+      ```sql
+      -- Ejemplo usando psql (ajuste según sus credenciales)
+      CREATE DATABASE luz_y_verdad;
+      CREATE USER postgres WITH PASSWORD 'postgres'; -- Use el usuario/contraseña de su .env
+      GRANT ALL PRIVILEGES ON DATABASE luz_y_verdad TO postgres;
+      ALTER USER postgres CREATEDB;
+      ```
+
+6.  **Ejecute las migraciones**: 
+    ```bash
+    python manage.py migrate
+    ```
+7.  **Cree un superusuario**: 
+    ```bash
+    python manage.py createsuperuser
+    ```
+8.  **Inicie el servidor Django**: 
+    ```bash
+    python manage.py runserver # Se ejecutará en http://127.0.0.1:8000/
+    ```
+
+### 4. Configuración del Frontend (React/Vite)
+
+1.  **Navegue hasta la carpeta del frontend** (en una nueva terminal):
+    ```bash
+    cd ../frontend 
+    ```
+2.  **Instale las dependencias**: 
+    ```bash
+    npm install
+    ```
+3.  **Configure el archivo `.env` del frontend**: Cree un archivo `.env` en la carpeta `frontend` con el siguiente contenido, apuntando a su servidor backend local:
+    ```
+    VITE_API_URL=http://127.0.0.1:8000/api
+    ```
+4.  **Inicie el servidor de desarrollo**: 
+    ```bash
+    npm run dev # Se ejecutará en http://localhost:5173/
+    ```
+
+### 5. Acceso al Sistema Local
+
+- **Frontend**: Abra `http://localhost:5173` en su navegador.
+- **Backend API**: Accesible en `http://127.0.0.1:8000/api/`.
+- **Admin Django**: Acceda a `http://127.0.0.1:8000/admin/` con las credenciales del superusuario.
+
+---
+
