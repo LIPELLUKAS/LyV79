@@ -1,282 +1,200 @@
 # Sistema de Gestión Masónica "Luz y Verdad"
 
-## Descripción General
+## Documentación del Sistema
 
-El Sistema de Gestión Masónica "Luz y Verdad" es una aplicación web completa diseñada para ayudar a las logias masónicas a gestionar sus actividades, miembros, finanzas y comunicaciones. La aplicación consta de un backend desarrollado en Django (Python) y un frontend desarrollado en React.
+### Introducción
 
-## Estructura del Proyecto
+El Sistema de Gestión Masónica "Luz y Verdad" es una plataforma integral diseñada específicamente para cubrir las necesidades administrativas, financieras, ritualísticas y organizacionales de una Logia Masónica. Inspirado en modelos de gestión eclesiástica, el sistema busca potenciar la eficiencia institucional, preservar el orden jerárquico tradicional y fortalecer la comunicación interna entre los Hermanos, mediante herramientas tecnológicas modernas y seguras.
 
-El proyecto está organizado en los siguientes directorios principales:
+### Arquitectura del Sistema
 
-```
-luz_y_verdad_code/
-├── backend/            # API REST en Django
-├── frontend/           # Aplicación React
-├── nginx/              # Configuración de Nginx
-├── .env                # Variables de entorno
-├── docker-compose.yml  # Configuración de Docker
-└── deploy.sh           # Script de despliegue
-```
+El sistema cuenta con dos entornos principales:
 
-## Módulos Principales
+1. **Backend**: Desarrollado con Django y Django REST Framework, utilizando PostgreSQL como base de datos.
+2. **Frontend**: Desarrollado con React y Vite, utilizando Tailwind CSS para el diseño de la interfaz.
 
-El sistema incluye los siguientes módulos:
+### Módulos del Sistema
 
-1. **Autenticación**: Gestión de usuarios, roles y permisos.
-2. **Miembros**: Registro y gestión de miembros de la logia.
-3. **Tesorería**: Control de ingresos, gastos y cuotas.
-4. **Comunicaciones**: Sistema de anuncios y mensajería interna.
-5. **Rituales**: Programación y gestión de ceremonias y reuniones.
-6. **Biblioteca**: Gestión de libros y documentos.
-7. **Administración**: Configuraciones generales y registros del sistema.
+#### 1. Autenticación y Seguridad
 
-## Requisitos Técnicos
+- Sistema de autenticación con JWT
+- Autenticación de dos factores (2FA)
+- Control de acceso basado en roles y grados masónicos
+- Gestión de perfiles de usuario
 
-### Backend
-- Python 3.8+
-- Django 3.2+
-- Django REST Framework
-- PostgreSQL
-- Otras dependencias listadas en `backend/requirements.txt`
+#### 2. Gestión de Miembros
 
-### Frontend
-- Node.js 14+
-- React 17+
-- Vite
-- Tailwind CSS
-- Otras dependencias listadas en `frontend/package.json`
+- Registro y gestión de miembros
+- Seguimiento de progresión masónica
+- Gestión de documentos personales
+- Registro de asistencia
 
-### Infraestructura
+#### 3. Tesorería
+
+- Gestión de cuotas y pagos
+- Generación de facturas
+- Seguimiento de pagos pendientes
+- Informes financieros
+
+#### 4. Comunicaciones
+
+- Centro de notificaciones
+- Gestión de eventos
+- Mensajería interna
+- Calendario compartido
+
+#### 5. Planificación Ritual
+
+- Programación de tenidas
+- Asignación de roles rituales
+- Gestión de trabajos masónicos
+- Registro de actas
+
+#### 6. Biblioteca Digital
+
+- Organización jerárquica de documentos
+- Control de acceso basado en grados
+- Sistema de calificaciones y comentarios
+- Estadísticas de visualización
+
+#### 7. Administración
+
+- Configuración de la Logia
+- Registros del sistema
+- Gestión de respaldos
+- Monitoreo de salud del sistema
+
+### Requisitos del Sistema
+
+#### Requisitos de Hardware
+
+- Servidor con al menos 2GB de RAM
+- 20GB de espacio en disco
+- Procesador de 2 núcleos o superior
+
+#### Requisitos de Software
+
 - Docker y Docker Compose
-- Nginx
-- Sistema operativo Linux (recomendado)
+- Nginx (para producción)
+- Certificado SSL (para producción)
 
-## Instalación y Configuración
+### Instalación y Configuración
 
-### Usando Docker (Recomendado)
+#### Instalación Local para Desarrollo
 
-1. Clone el repositorio:
+1. Clonar el repositorio:
    ```bash
-   git clone [URL_DEL_REPOSITORIO]
-   cd luz_y_verdad_code
+   git clone https://github.com/LIPELLUKAS/LyV79.git
+   cd LyV79
    ```
 
-2. Configure las variables de entorno:
+2. Configurar el entorno:
    ```bash
    cp .env.example .env
-   # Edite el archivo .env con sus configuraciones
+   # Editar el archivo .env con los valores adecuados
    ```
 
-3. Inicie los contenedores:
-   ```bash
-   docker-compose up -d
-   ```
-
-4. Acceda a la aplicación:
-   - Frontend: http://localhost:80
-   - API Backend: http://localhost:80/api/
-   - Documentación API: http://localhost:80/api/docs/
-
-### Instalación Manual
-
-#### Backend
-
-1. Cree y active un entorno virtual:
+3. Iniciar el backend:
    ```bash
    cd backend
    python -m venv venv
    source venv/bin/activate  # En Windows: venv\Scripts\activate
-   ```
-
-2. Instale las dependencias:
-   ```bash
    pip install -r requirements.txt
-   ```
-
-3. Configure la base de datos:
-   ```bash
    python manage.py migrate
-   ```
-
-4. Cree un superusuario:
-   ```bash
    python manage.py createsuperuser
-   ```
-
-5. Inicie el servidor:
-   ```bash
    python manage.py runserver
    ```
 
-#### Frontend
-
-1. Instale las dependencias:
+4. Iniciar el frontend:
    ```bash
    cd frontend
    npm install
-   ```
-
-2. Configure las variables de entorno:
-   ```bash
-   cp .env.example .env
-   # Edite el archivo .env con la URL de su API
-   ```
-
-3. Inicie el servidor de desarrollo:
-   ```bash
    npm run dev
    ```
 
-## Uso del Sistema
+#### Instalación en Producción con Docker
 
-### Acceso al Sistema
-
-1. Acceda a la aplicación a través de la URL configurada.
-2. Inicie sesión con las credenciales proporcionadas por el administrador.
-
-### Navegación Principal
-
-El sistema está organizado en módulos accesibles desde el menú lateral:
-
-- **Dashboard**: Resumen general y accesos rápidos.
-- **Miembros**: Gestión de miembros de la logia.
-- **Tesorería**: Control financiero.
-- **Comunicaciones**: Anuncios y mensajería.
-- **Rituales**: Calendario y gestión de ceremonias.
-- **Biblioteca**: Acceso a documentos y libros.
-- **Administración**: Configuraciones del sistema.
-
-## Funcionalidades por Módulo
-
-### Módulo de Miembros
-
-- Registro de nuevos miembros
-- Gestión de perfiles
-- Seguimiento de grados y progresión
-- Directorio de miembros
-- Filtros y búsqueda avanzada
-
-### Módulo de Tesorería
-
-- Registro de ingresos y gastos
-- Control de cuotas
-- Generación de informes financieros
-- Presupuestos
-- Recordatorios de pagos
-
-### Módulo de Comunicaciones
-
-- Anuncios generales
-- Mensajería privada entre miembros
-- Notificaciones
-- Archivos adjuntos
-
-### Módulo de Rituales
-
-- Programación de ceremonias
-- Gestión de asistencia
-- Asignación de oficiales
-- Calendario de eventos
-- Documentos rituales
-
-### Módulo de Biblioteca
-
-- Catálogo de libros
-- Repositorio de documentos
-- Sistema de préstamos
-- Categorización y etiquetado
-- Búsqueda por metadatos
-
-### Módulo de Administración
-
-- Configuraciones generales
-- Gestión de usuarios y permisos
-- Registros de actividad
-- Copias de seguridad
-- Personalización
-
-## Seguridad
-
-El sistema implementa múltiples capas de seguridad:
-
-- Autenticación basada en tokens JWT
-- Permisos granulares basados en roles
-- Cifrado de datos sensibles
-- Protección CSRF
-- Validación de entradas
-- Registros de auditoría
-
-## Mantenimiento
-
-### Copias de Seguridad
-
-Se recomienda realizar copias de seguridad periódicas de:
-
-1. Base de datos:
+1. Clonar el repositorio:
    ```bash
-   docker-compose exec db pg_dump -U postgres luz_y_verdad > backup_$(date +%Y%m%d).sql
+   git clone https://github.com/LIPELLUKAS/LyV79.git
+   cd LyV79
    ```
 
-2. Archivos subidos:
+2. Configurar el entorno:
    ```bash
-   tar -czf media_backup_$(date +%Y%m%d).tar.gz backend/media/
+   cp .env.example .env
+   # Editar el archivo .env con los valores adecuados para producción
    ```
 
-### Actualizaciones
-
-Para actualizar el sistema:
-
-1. Respalde la base de datos y archivos.
-2. Detenga los contenedores:
-   ```bash
-   docker-compose down
-   ```
-3. Actualice el código:
-   ```bash
-   git pull
-   ```
-4. Reconstruya los contenedores:
-   ```bash
-   docker-compose build
-   ```
-5. Inicie los contenedores:
+3. Iniciar los contenedores:
    ```bash
    docker-compose up -d
    ```
-6. Aplique las migraciones:
+
+4. Crear superusuario:
    ```bash
-   docker-compose exec backend python manage.py migrate
+   docker-compose exec backend python manage.py createsuperuser
    ```
 
-## Solución de Problemas
+### Guía de Uso
 
-### Problemas Comunes
+#### Acceso al Sistema
 
-1. **Error de conexión a la base de datos**:
-   - Verifique las credenciales en el archivo `.env`
-   - Confirme que el servicio de PostgreSQL esté en ejecución
+1. Acceder a la URL del sistema (http://localhost:3000 en desarrollo o su dominio en producción)
+2. Iniciar sesión con las credenciales proporcionadas
+3. Para el primer acceso, utilizar las credenciales del superusuario creado durante la instalación
 
-2. **Errores 500 en la API**:
-   - Revise los logs del backend:
-     ```bash
-     docker-compose logs backend
-     ```
+#### Navegación Principal
 
-3. **Pantalla en blanco en el frontend**:
-   - Verifique la consola del navegador para errores
-   - Confirme que la URL de la API esté correctamente configurada
+- **Dashboard**: Vista general con estadísticas y accesos rápidos
+- **Miembros**: Gestión de miembros de la Logia
+- **Tesorería**: Gestión financiera
+- **Comunicaciones**: Notificaciones, eventos y mensajería
+- **Rituales**: Planificación de tenidas y trabajos
+- **Biblioteca**: Documentos y recursos masónicos
+- **Administración**: Configuración y mantenimiento del sistema
 
-4. **Problemas de permisos**:
-   - Verifique que el usuario tenga los roles adecuados
-   - Revise la configuración de permisos en el panel de administración
+### Roles y Permisos
 
-## Contacto y Soporte
+- **Venerable Maestro**: Acceso completo a todos los módulos
+- **Vigilantes**: Acceso a todos los módulos excepto administración
+- **Secretario**: Acceso a miembros, comunicaciones y rituales
+- **Tesorero**: Acceso a tesorería y miembros
+- **Miembros**: Acceso limitado según su grado masónico
 
-Para soporte técnico o consultas, contacte a:
+### Mantenimiento del Sistema
 
-- Email: soporte@luzyverda.org
-- Teléfono: +1-234-567-8900
+#### Respaldos
+
+El sistema incluye un módulo de respaldos que permite:
+- Configurar respaldos automáticos
+- Crear respaldos manuales
+- Restaurar respaldos anteriores
+
+#### Monitoreo
+
+El módulo de salud del sistema proporciona:
+- Estadísticas de uso de recursos
+- Monitoreo de servicios
+- Alertas de problemas
+
+#### Registros del Sistema
+
+Los registros del sistema permiten:
+- Seguimiento de actividades
+- Detección de errores
+- Auditoría de seguridad
+
+### Soporte y Contacto
+
+Para soporte técnico o consultas sobre el sistema, contactar a:
+- Email: soporte@luzverdad.org
+- Teléfono: +XX XXX XXX XXX
+
+### Licencia
+
+Este sistema está licenciado bajo términos específicos para uso exclusivo de Logias Masónicas. No se permite su redistribución o uso comercial sin autorización expresa.
 
 ---
 
-© 2025 Sistema de Gestión Masónica "Luz y Verdad". Todos los derechos reservados.
+© 2025 Sistema de Gestión Masónica "Luz y Verdad" - Todos los derechos reservados
