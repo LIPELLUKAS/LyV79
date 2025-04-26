@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 
 class MasonicUser(AbstractUser):
     """
@@ -74,7 +75,7 @@ class OfficerRole(models.Model):
     ]
     
     user = models.OneToOneField(
-        'MasonicUser', 
+        settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE,
         related_name='officer_role',
         verbose_name=_('usuario')

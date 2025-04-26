@@ -86,7 +86,7 @@ class MemberDocument(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
-        related_name='uploaded_documents',
+        related_name='member_documents',
         verbose_name=_('subido por')
     )
     created_at = models.DateTimeField(_('fecha de creación'), auto_now_add=True)

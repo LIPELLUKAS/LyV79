@@ -5,7 +5,7 @@ from .models import MemberProfile, MemberDocument, MemberProgress, Attendance
 class MemberProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'profession', 'birth_date', 'last_attendance_date', 'attendance_count')
     search_fields = ('user__username', 'user__symbolic_name', 'user__first_name', 'user__last_name', 'profession')
-    list_filter = ('user__degree', 'user__is_active')
+    list_filter = ('user__is_active',)
     date_hierarchy = 'last_attendance_date'
     readonly_fields = ('created_at', 'updated_at')
 
