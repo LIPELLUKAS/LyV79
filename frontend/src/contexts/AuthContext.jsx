@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
         
         if (token) {
           // Verificar si el token ha expirado
-          const decodedToken = jwt_decode(token);
+          const decodedToken = jwtDecode(token);
           const currentTime = Date.now() / 1000;
           
           if (decodedToken.exp < currentTime) {
