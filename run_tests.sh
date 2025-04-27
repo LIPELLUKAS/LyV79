@@ -7,7 +7,7 @@ echo "=== Iniciando pruebas del Sistema de Gestión Masónica 'Luz y Verdad' ===
 echo ""
 
 # Directorio base del proyecto
-BASE_DIR="/home/ubuntu/luz_y_verdad"
+BASE_DIR="$(pwd)"
 BACKEND_DIR="$BASE_DIR/backend"
 FRONTEND_DIR="$BASE_DIR/frontend"
 

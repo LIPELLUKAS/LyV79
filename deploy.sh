@@ -7,7 +7,7 @@ echo "=== Iniciando despliegue del Sistema de Gestión Masónica 'Luz y Verdad' 
 echo ""
 
 # Directorio base del proyecto
-BASE_DIR="/Users/filipeladeiralucas/Downloads/luz_y_verdad_code"
+BASE_DIR="$(pwd)"
 cd $BASE_DIR
 
 # Colores para la salida
@@ -105,25 +105,27 @@ SUPERUSER_EXISTS=$(docker-compose exec backend python -c "import django; django.
 
 if [ "$SUPERUSER_EXISTS" = "False" ]; then
   echo "Creando superusuario..."
+  # Generar contraseña aleatoria
+  RANDOM_PASSWORD=$(openssl rand -base64 12)
   docker-compose exec backend python manage.py shell -c "
 from authentication.models import MasonicUser;
 MasonicUser.objects.create_superuser(
-  username='admin',
-  email='admin@luz-y-verdad.org',
-  password='admin123',
-  first_name='Administrador',
-  last_name='Sistema',
-  symbolic_name='Venerable Maestro',
+  username=\'admin\',
+  email=\'admin@luz-y-verdad.org\',
+  password=\'${RANDOM_PASSWORD}\',
+  first_name=\'Administrador\',
+  last_name=\'Sistema\',
+  symbolic_name=\'Venerable Maestro\',
   degree=3,
-  office='Venerable Maestro'
+  office=\'Venerable Maestro\'
 )
-print('Superusuario creado con éxito.')
+print(\'Superusuario creado con éxito.\')
 "
   show_status $? "Creación de superusuario"
   echo -e "${YELLOW}Superusuario creado con las siguientes credenciales:${NC}"
   echo -e "${YELLOW}Usuario: admin${NC}"
-  echo -e "${YELLOW}Contraseña: admin123${NC}"
-  echo -e "${YELLOW}¡Cambie esta contraseña inmediatamente después del primer inicio de sesión!${NC}"
+  echo -e "${YELLOW}Contraseña: ${RANDOM_PASSWORD}${NC}"
+  echo -e "${YELLOW}¡Guarde esta contraseña de forma segura!${NC}"
 else
   echo -e "${GREEN}El superusuario ya existe.${NC}"
 fi

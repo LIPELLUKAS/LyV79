@@ -11,13 +11,13 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_DB=${DB_NAME}
     ports:
-      - "5433:5433"
+      - "5432:5432"
     restart: always
 
   redis:
     image: redis:7
     ports:
-      - "6380:6380"
+      - "6379:6379"
     restart: always
 
   backend:
@@ -34,7 +34,7 @@ services:
       - db
       - redis
     ports:
-      - "8001:8000"
+      - "8000:8000"
     restart: always
     command: >
       sh -c "python manage.py migrate &&
@@ -51,7 +51,7 @@ services:
     env_file:
       - ./.env
     ports:
-      - "3001:3000"
+      - "3000:3000"
     depends_on:
       - backend
     restart: always
@@ -90,9 +90,11 @@ services:
   nginx:
     image: nginx:1.23
     ports:
-      - "81:80"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
       - static_volume:/var/www/staticfiles
       - media_volume:/var/www/media
     depends_on:
