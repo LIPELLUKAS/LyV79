@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNotification } from './NotificationContext';
 import axios from 'axios'; // Certifique-se de ter o axios instalado ou utilize fetch se preferir
 
 const ConfigContext = createContext();
@@ -9,7 +8,7 @@ export const useConfig = () => {
 };
 
 export const ConfigProvider = ({ children }) => {
-  const { showNotification } = useNotification();
+  // Removemos la dependencia directa de useNotification
   const [config, setConfig] = useState({
     lodgeName: 'Logia Luz y Verdad',
     lodgeNumber: '79',
@@ -26,8 +25,8 @@ export const ConfigProvider = ({ children }) => {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        // Aqui vamos buscar a configuração real da API usando a URL configurada no backend
-        const response = await axios.get('http://localhost:8000/config'); // Ajuste a URL conforme necessário
+        // Corrigimos a URL para apontar para o endpoint correto da API
+        const response = await axios.get('http://localhost:8000/api/core/configuration/');
         setConfig(prevConfig => ({
           ...prevConfig,
           isLoaded: true,
@@ -35,18 +34,19 @@ export const ConfigProvider = ({ children }) => {
         }));
       } catch (error) {
         console.error('Erro ao carregar a configuração:', error);
-        showNotification('Erro ao carregar a configuração do sistema', 'error');
+        // Reemplazamos la llamada a showNotification por un console.error
+        console.error('Erro ao carregar a configuração do sistema');
       }
     };
 
     fetchConfig();
-  }, [showNotification]);
+  }, []);
 
   // Atualizar configuração no backend
   const updateConfig = async (newConfig) => {
     try {
-      // Aqui vamos enviar a nova configuração para a API
-      const response = await axios.put('http://localhost:8000/config', newConfig); // Ajuste a URL conforme necessário
+      // Corregimos también la URL para actualizar la configuración
+      const response = await axios.put("http://localhost:8000/api/core/configuration/", newConfig);
       setConfig({ ...newConfig, isLoaded: true });
 
       // Guardar preferências no localStorage
@@ -56,11 +56,11 @@ export const ConfigProvider = ({ children }) => {
       if (newConfig.timeFormat) localStorage.setItem('timeFormat', newConfig.timeFormat);
       if (newConfig.currency) localStorage.setItem('currency', newConfig.currency);
 
-      showNotification('Configuração atualizada com sucesso', 'success');
+      console.log('Configuração atualizada com sucesso');
       return true;
     } catch (error) {
       console.error('Erro ao atualizar a configuração:', error);
-      showNotification('Erro ao atualizar a configuração', 'error');
+      console.error('Erro ao atualizar a configuração');
       return false;
     }
   };
