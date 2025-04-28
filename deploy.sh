@@ -111,8 +111,8 @@ if [ "$SUPERUSER_EXISTS" = "False" ]; then
 from authentication.models import MasonicUser;
 MasonicUser.objects.create_superuser(
   username=\'admin\',
-  email=\'admin@luz-y-verdad.org\',
-  password=\'${RANDOM_PASSWORD}\',
+  email=\'filipe.l.lucas@gmail.com\',
+  password=\'12345678\',
   first_name=\'Administrador\',
   last_name=\'Sistema\',
   symbolic_name=\'Venerable Maestro\',
