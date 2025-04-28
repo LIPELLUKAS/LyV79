@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfig } from '../contexts/ConfigContext';
-import { useNotifications } from '../contexts/NotificationContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { adminService, memberService, treasuryService, communicationsService } from '../services/api';
 
 const Dashboard = () => {
   const { currentUser } = useAuth();
   const { lodgeConfig } = useConfig();
-  const { notifications, markAsRead } = useNotifications();
+  const { notifications, markAsRead } = useNotification();
   
   const [stats, setStats] = useState({
     totalMembers: 0,
