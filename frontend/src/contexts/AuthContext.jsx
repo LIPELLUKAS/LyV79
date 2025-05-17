@@ -27,53 +27,69 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         
         if (token) {
-          // Verificar si el token ha expirado
-          const decodedToken = jwtDecode(token);
-          const currentTime = Date.now() / 1000;
+          // Verificar que el token tenga el formato correcto antes de decodificarlo
+          if (!token.includes('.') || token.split('.').length !== 3) {
+            console.error('Token malformado, realizando logout');
+            logout();
+            return;
+          }
           
-          if (decodedToken.exp < currentTime) {
-            // Token expirado, intentar refrescar
-            try {
-              const refreshToken = localStorage.getItem('refreshToken');
-              if (refreshToken) {
-                const response = await authService.refreshToken(refreshToken);
-                localStorage.setItem('token', response.data.access);
-                
-                // Obtener información del usuario actual
-                const userResponse = await authService.getCurrentUser();
-                setCurrentUser(userResponse.data);
+          try {
+            // Verificar si el token ha expirado
+            const decodedToken = jwtDecode(token);
+            const currentTime = Date.now() / 1000;
+            
+            if (decodedToken.exp < currentTime) {
+              // Token expirado, intentar refrescar
+              try {
+                const refreshToken = localStorage.getItem('refreshToken');
+                if (refreshToken) {
+                  const response = await authService.refreshToken(refreshToken);
+                  localStorage.setItem('token', response.data.access);
+                  
+                  // Obtener información del usuario actual
+                  const userResponse = await authService.getCurrentUser();
+                  setCurrentUser(userResponse.data);
+                  setIsAuthenticated(true);
+                  
+                  // Establecer el rol principal del usuario
+                  if (userResponse.data.roles && userResponse.data.roles.length > 0) {
+                    setUserRole(userResponse.data.roles[0]);
+                  }
+                } else {
+                  // No hay refresh token, logout
+                  logout();
+                }
+              } catch (refreshError) {
+                // Error al refrescar el token, logout
+                console.error('Error al refrescar token:', refreshError);
+                logout();
+              }
+            } else {
+              // Token válido, obtener información del usuario
+              try {
+                const response = await authService.getCurrentUser();
+                setCurrentUser(response.data);
                 setIsAuthenticated(true);
                 
                 // Establecer el rol principal del usuario
-                if (userResponse.data.roles && userResponse.data.roles.length > 0) {
-                  setUserRole(userResponse.data.roles[0]);
+                if (response.data.roles && response.data.roles.length > 0) {
+                  setUserRole(response.data.roles[0]);
                 }
-              } else {
-                // No hay refresh token, logout
+              } catch (userError) {
+                // Error al obtener información del usuario, logout
+                console.error('Error al obtener información del usuario:', userError);
                 logout();
               }
-            } catch (refreshError) {
-              // Error al refrescar el token, logout
-              logout();
             }
-          } else {
-            // Token válido, obtener información del usuario
-            try {
-              const response = await authService.getCurrentUser();
-              setCurrentUser(response.data);
-              setIsAuthenticated(true);
-              
-              // Establecer el rol principal del usuario
-              if (response.data.roles && response.data.roles.length > 0) {
-                setUserRole(response.data.roles[0]);
-              }
-            } catch (userError) {
-              // Error al obtener información del usuario, logout
-              logout();
-            }
+          } catch (decodeError) {
+            // Error al decodificar el token, logout
+            console.error('Error al decodificar token:', decodeError);
+            logout();
           }
         }
       } catch (e) {
+        console.error('Error en checkLoggedIn:', e);
         setError(e.message);
       } finally {
         setLoading(false);

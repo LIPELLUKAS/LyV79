@@ -31,19 +31,19 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     
     // Si el error es 401 (No autorizado) y no hemos intentado refrescar el token
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
-        // Intentar refrescar el token
+        // Importar authService para usar su método refreshToken
+        const authService = require('./authService').default;
         const refreshToken = localStorage.getItem('refreshToken');
+        
         if (!refreshToken) {
           throw new Error('No refresh token available');
         }
         
-        const response = await axios.post('/api/auth/token/refresh/', {
-          refresh: refreshToken
-        });
+        const response = await authService.refreshToken(refreshToken);
         
         // Guardar el nuevo token
         localStorage.setItem('token', response.data.access);
@@ -52,6 +52,7 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
         return api(originalRequest);
       } catch (refreshError) {
+        console.error('Error al refrescar token:', refreshError);
         // Si no se puede refrescar el token, redirigir al login
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
@@ -64,52 +65,7 @@ api.interceptors.response.use(
   }
 );
 
-// Servicios de autenticación
-export const authService = {
-  login: async (username, password) => {
-    const response = await api.post('/auth/token/', { username, password });
-    localStorage.setItem('token', response.data.access);
-    localStorage.setItem('refreshToken', response.data.refresh);
-    return response.data;
-  },
-  
-  logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-  },
-  
-  register: async (userData) => {
-    return await api.post('/auth/register/', userData);
-  },
-  
-  forgotPassword: async (email) => {
-    return await api.post('/auth/password-reset/', { email });
-  },
-  
-  resetPassword: async (token, password) => {
-    return await api.post('/auth/password-reset/confirm/', { token, password });
-  },
-  
-  getCurrentUser: async () => {
-    return await api.get('/auth/user/');
-  },
-  
-  updateProfile: async (userData) => {
-    return await api.put('/auth/user/', userData);
-  },
-  
-  setup2FA: async () => {
-    return await api.post('/auth/2fa/setup/');
-  },
-  
-  verify2FA: async (code) => {
-    return await api.post('/auth/2fa/verify/', { code });
-  },
-  
-  disable2FA: async () => {
-    return await api.post('/auth/2fa/disable/');
-  }
-};
+// Eliminamos el servicio de autenticación duplicado para usar solo authService.js
 
 // Servicios de miembros
 export const memberService = {
