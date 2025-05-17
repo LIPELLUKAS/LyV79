@@ -1,11 +1,10 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { communicationsService } from '../services/api';
 
 const NotificationContext = createContext();
 
 export const useNotification = () => {
   const context = useContext(NotificationContext);
-  
-  console.log("Contexto de Notificação:", context);  // Adicionando o log para verificar o contexto
   
   if (!context) {
     throw new Error("useNotification must be used within a NotificationProvider");
@@ -16,44 +15,91 @@ export const useNotification = () => {
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [uiNotifications, setUiNotifications] = useState([]);
 
-  // Mostrar uma notificação
+  // Cargar notificaciones al iniciar
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // Obtener notificaciones del servidor
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await communicationsService.getAllNotifications({ 
+        read: false,
+        limit: 10
+      });
+      setNotifications(response.data.results || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error al cargar notificaciones:', err);
+      setError('Error al cargar notificaciones');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Marcar notificación como leída
+  const markAsRead = async (id) => {
+    try {
+      await communicationsService.markNotificationAsRead(id);
+      
+      // Actualizar estado local
+      setNotifications(prev => 
+        prev.map(notification =>
+          notification.id === id ? { ...notification, read: true } : notification
+        )
+      );
+      
+      return { success: true };
+    } catch (err) {
+      console.error('Error al marcar notificación como leída:', err);
+      return { 
+        success: false, 
+        error: err.response?.data?.detail || 'Error al marcar notificación' 
+      };
+    }
+  };
+
+  // Mostrar una notificación UI
   const showNotification = (message, type = 'info', duration = 5000) => {
     const id = Date.now();
     
-    // Adicionar nova notificação
-    setNotifications(prev => [...prev, { id, message, type, duration }]);
+    // Adicionar nueva notificación UI
+    setUiNotifications(prev => [...prev, { id, message, type, duration }]);
     
-    // Eliminar automaticamente após a duração especificada
+    // Eliminar automáticamente después de la duración especificada
     if (duration > 0) {
       setTimeout(() => {
-        removeNotification(id);
+        removeUiNotification(id);
       }, duration);
     }
     
     return id;
   };
 
-  // Eliminar uma notificação
-  const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+  // Eliminar una notificación UI
+  const removeUiNotification = (id) => {
+    setUiNotifications(prev => prev.filter(notification => notification.id !== id));
   };
 
-  // Eliminar todas as notificações
-  const clearAllNotifications = () => {
-    setNotifications([]);
+  // Eliminar todas las notificaciones UI
+  const clearAllUiNotifications = () => {
+    setUiNotifications([]);
   };
 
-  // Componente para renderizar as notificações
+  // Componente para renderizar las notificaciones UI
   const NotificationContainer = () => {
     return (
       <div className="fixed top-4 right-4 z-50 space-y-2">
-        {notifications.map(notification => (
+        {uiNotifications.map(notification => (
           <div
             key={notification.id}
             className={`px-4 py-3 rounded-lg shadow-md flex items-start justify-between transition-all duration-300 transform translate-x-0 ${
-              notification.read ? 'opacity-50' : '' // Adicionando opacidade para notificações lidas
-            } ${notification.type === 'success' ? 'bg-green-100 text-green-800 border-l-4 border-green-500' :
+              notification.type === 'success' ? 'bg-green-100 text-green-800 border-l-4 border-green-500' :
               notification.type === 'error' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
               notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' :
               'bg-blue-100 text-blue-800 border-l-4 border-blue-500'
@@ -63,10 +109,7 @@ export const NotificationProvider = ({ children }) => {
               <p className="text-sm font-medium">{notification.message}</p>
             </div>
             <button
-              onClick={() => {
-                removeNotification(notification.id);
-                markAsRead(notification.id);  // Marcar como lida ao fechar
-              }}
+              onClick={() => removeUiNotification(notification.id)}
               className="text-gray-500 hover:text-gray-700 focus:outline-none"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,21 +122,15 @@ export const NotificationProvider = ({ children }) => {
     );
   };
 
-  // Marcar uma notificação como lida
-  const markAsRead = (id) => {
-    setNotifications(prev => 
-      prev.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-  };
-
   const value = {
     notifications,
+    loading,
+    error,
+    fetchNotifications,
+    markAsRead,
     showNotification,
-    removeNotification,
-    clearAllNotifications,
-    markAsRead
+    removeUiNotification,
+    clearAllUiNotifications
   };
 
   return (

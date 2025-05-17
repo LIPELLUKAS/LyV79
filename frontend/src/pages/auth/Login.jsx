@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConfig } from '../../contexts/ConfigContext';
+import { useNotification } from '../../contexts/NotificationContext';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -9,8 +10,11 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [darkMode, setDarkMode] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  
   const { login } = useAuth();
   const { lodgeConfig } = useConfig();
+  const { showNotification } = useNotification();
   const navigate = useNavigate();
 
   // Detectar preferencia de modo oscuro
@@ -49,24 +53,42 @@ const Login = () => {
         throw new Error('La contraseña es obligatoria');
       }
       
+      // Si está marcado "Recordarme", guardar el nombre de usuario en localStorage
+      if (rememberMe) {
+        localStorage.setItem('rememberedUsername', username);
+      } else {
+        localStorage.removeItem('rememberedUsername');
+      }
+      
       const result = await login(username, password);
       
       if (result.requires_2fa) {
         // Redirigir a la página de verificación 2FA
         navigate('/auth/verify-2fa');
+        showNotification('Se requiere verificación de dos factores', 'info');
       } else if (result.success) {
         // Redirigir al dashboard
+        showNotification('Inicio de sesión exitoso', 'success');
         navigate('/');
       } else {
         setError(result.error || 'Error al iniciar sesión');
       }
     } catch (err) {
       setError(err.message || 'Error al conectar con el servidor');
-      console.error(err);
+      console.error('Error de login:', err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Cargar nombre de usuario recordado al iniciar
+  useEffect(() => {
+    const rememberedUsername = localStorage.getItem('rememberedUsername');
+    if (rememberedUsername) {
+      setUsername(rememberedUsername);
+      setRememberMe(true);
+    }
+  }, []);
 
   return (
     <div 
@@ -252,6 +274,8 @@ const Login = () => {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className={`h-4 w-4 ${
                   darkMode 
                     ? 'bg-gray-700 border-gray-600 text-indigo-500' 
