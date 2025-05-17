@@ -1,4 +1,5 @@
 import api from './api';
+import { saveTokens, clearTokens } from './tokenService';
 
 /**
  * Serviço de autenticação para gerenciar login, logout e operações relacionadas
@@ -10,7 +11,11 @@ export const authService = {
    * @returns {Promise} - Promise com o resultado da operação
    */
   login: async (credentials) => {
-    return await api.post('/authentication/token/', credentials);
+    const response = await api.post('/authentication/token/', credentials);
+    if (response.data && response.data.access) {
+      saveTokens(response.data.access, response.data.refresh);
+    }
+    return response;
   },
 
   /**
@@ -114,8 +119,7 @@ export const authService = {
    * Realiza o logout do usuário
    */
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
+    clearTokens();
   }
 };
 

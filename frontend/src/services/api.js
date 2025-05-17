@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { getToken, refreshToken } from './authService';
+import { getToken } from './tokenService';
+import tokenService from './tokenService';
 
 // Configuración base de axios
 const api = axios.create({
@@ -33,7 +34,7 @@ api.interceptors.response.use(
       
       try {
         // Intentar refresh token
-        await refreshToken();
+        await tokenService.refreshToken(api);
         
         // Reintentar la solicitud original con el nuevo token
         const token = getToken();
