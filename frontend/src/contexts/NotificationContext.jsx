@@ -1,142 +1,180 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { communicationsService } from '../services/api';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { useAuth } from './AuthContext';
+import { communicationService } from '../services/api';
 
 const NotificationContext = createContext();
 
-export const useNotification = () => {
-  const context = useContext(NotificationContext);
-  
-  if (!context) {
-    throw new Error("useNotification must be used within a NotificationProvider");
-  }
-
-  return context;
-};
+export const useNotification = () => useContext(NotificationContext);
 
 export const NotificationProvider = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [uiNotifications, setUiNotifications] = useState([]);
+  const [toasts, setToasts] = useState([]);
 
-  // Cargar notificaciones al iniciar
+  // Cargar notificaciones cuando el usuario está autenticado
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    if (isAuthenticated) {
+      fetchNotifications();
+      fetchUnreadCount();
+      
+      // Configurar intervalo para actualizar el contador de no leídas
+      const interval = setInterval(fetchUnreadCount, 60000); // Cada minuto
+      
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
 
-  // Obtener notificaciones del servidor
+  // Función para obtener notificaciones
   const fetchNotifications = async () => {
+    if (!isAuthenticated) return;
+    
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      const response = await communicationsService.getAllNotifications({ 
-        read: false,
-        limit: 10
-      });
-      setNotifications(response.data.results || []);
-      setError(null);
+      const response = await communicationService.getNotifications();
+      setNotifications(response.data);
     } catch (err) {
       console.error('Error al cargar notificaciones:', err);
-      setError('Error al cargar notificaciones');
+      setError('No se pudieron cargar las notificaciones');
     } finally {
       setLoading(false);
     }
   };
 
-  // Marcar notificación como leída
-  const markAsRead = async (id) => {
+  // Función para obtener contador de no leídas
+  const fetchUnreadCount = async () => {
+    if (!isAuthenticated) return;
+    
     try {
-      await communicationsService.markNotificationAsRead(id);
+      const response = await communicationService.getUnreadCount();
+      setUnreadCount(response.data.count);
+    } catch (err) {
+      console.error('Error al cargar contador de no leídas:', err);
+    }
+  };
+
+  // Función para marcar notificación como leída
+  const markAsRead = async (notificationId) => {
+    try {
+      await communicationService.markNotificationAsRead(notificationId);
       
       // Actualizar estado local
-      setNotifications(prev => 
-        prev.map(notification =>
-          notification.id === id ? { ...notification, read: true } : notification
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, is_read: true } 
+            : notification
         )
       );
+      
+      // Actualizar contador
+      setUnreadCount(prevCount => Math.max(0, prevCount - 1));
       
       return { success: true };
     } catch (err) {
       console.error('Error al marcar notificación como leída:', err);
-      return { 
-        success: false, 
-        error: err.response?.data?.detail || 'Error al marcar notificación' 
-      };
+      return { error: 'No se pudo marcar la notificación como leída' };
     }
   };
 
-  // Mostrar una notificación UI
+  // Función para marcar todas como leídas
+  const markAllAsRead = async () => {
+    try {
+      await communicationService.markAllNotificationsAsRead();
+      
+      // Actualizar estado local
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => ({ ...notification, is_read: true }))
+      );
+      
+      // Actualizar contador
+      setUnreadCount(0);
+      
+      return { success: true };
+    } catch (err) {
+      console.error('Error al marcar todas las notificaciones como leídas:', err);
+      return { error: 'No se pudieron marcar todas las notificaciones como leídas' };
+    }
+  };
+
+  // Función para mostrar notificación toast
   const showNotification = (message, type = 'info', duration = 5000) => {
     const id = Date.now();
+    const toast = { id, message, type, duration };
     
-    // Adicionar nueva notificación UI
-    setUiNotifications(prev => [...prev, { id, message, type, duration }]);
+    setToasts(prevToasts => [...prevToasts, toast]);
     
-    // Eliminar automáticamente después de la duración especificada
-    if (duration > 0) {
-      setTimeout(() => {
-        removeUiNotification(id);
-      }, duration);
-    }
+    // Eliminar automáticamente después de la duración
+    setTimeout(() => {
+      removeToast(id);
+    }, duration);
     
     return id;
   };
 
-  // Eliminar una notificación UI
-  const removeUiNotification = (id) => {
-    setUiNotifications(prev => prev.filter(notification => notification.id !== id));
+  // Función para eliminar toast
+  const removeToast = (id) => {
+    setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
   };
 
-  // Eliminar todas las notificaciones UI
-  const clearAllUiNotifications = () => {
-    setUiNotifications([]);
-  };
-
-  // Componente para renderizar las notificaciones UI
-  const NotificationContainer = () => {
-    return (
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {uiNotifications.map(notification => (
-          <div
-            key={notification.id}
-            className={`px-4 py-3 rounded-lg shadow-md flex items-start justify-between transition-all duration-300 transform translate-x-0 ${
-              notification.type === 'success' ? 'bg-green-100 text-green-800 border-l-4 border-green-500' :
-              notification.type === 'error' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
-              notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' :
-              'bg-blue-100 text-blue-800 border-l-4 border-blue-500'
-            }`}
-          >
-            <div className="flex-1 mr-2">
-              <p className="text-sm font-medium">{notification.message}</p>
-            </div>
-            <button
-              onClick={() => removeUiNotification(notification.id)}
-              className="text-gray-500 hover:text-gray-700 focus:outline-none"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        ))}
-      </div>
-    );
+  // Función para añadir notificación (útil para WebSockets)
+  const addNotification = (notification) => {
+    setNotifications(prevNotifications => [notification, ...prevNotifications]);
+    
+    if (!notification.is_read) {
+      setUnreadCount(prevCount => prevCount + 1);
+    }
+    
+    // Mostrar toast para la nueva notificación
+    showNotification(notification.message, 'info');
   };
 
   const value = {
     notifications,
+    unreadCount,
     loading,
     error,
+    toasts,
     fetchNotifications,
     markAsRead,
+    markAllAsRead,
     showNotification,
-    removeUiNotification,
-    clearAllUiNotifications
+    removeToast,
+    addNotification
   };
 
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <NotificationContainer />
+      
+      {/* Componente de Toasts */}
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2">
+        {toasts.map(toast => (
+          <div 
+            key={toast.id}
+            className={`px-4 py-3 rounded-lg shadow-lg max-w-md transform transition-all duration-300 ease-in-out ${
+              toast.type === 'success' ? 'bg-green-500 text-white' :
+              toast.type === 'error' ? 'bg-red-500 text-white' :
+              toast.type === 'warning' ? 'bg-yellow-500 text-white' :
+              'bg-indigo-500 text-white'
+            }`}
+          >
+            <div className="flex justify-between items-center">
+              <p>{toast.message}</p>
+              <button 
+                onClick={() => removeToast(toast.id)}
+                className="ml-4 text-white hover:text-gray-200 focus:outline-none"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </NotificationContext.Provider>
   );
 };

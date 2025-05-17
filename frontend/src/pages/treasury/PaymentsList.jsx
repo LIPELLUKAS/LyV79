@@ -2,131 +2,251 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { treasuryService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../contexts/NotificationContext';
 
 const PaymentsList = () => {
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    search: '',
-    status: 'pending',
-    date_range: 'all',
-    sort: '-due_date'
-  });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: 10,
-    total: 0
-  });
-  
-  const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const { showNotification } = useNotification();
+  
+  const [loading, setLoading] = useState(true);
+  const [payments, setPayments] = useState([]);
+  const [filteredPayments, setFilteredPayments] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [feeTypes, setFeeTypes] = useState([]);
+  
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMember, setSelectedMember] = useState('');
+  const [selectedFeeType, setSelectedFeeType] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  
+  // Paginación
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10
+  });
 
-  // Verificar permisos - Solo tesorero y VM pueden acceder
+  // Verificar permisos - Solo tesorero, VM y secretario pueden acceder
   useEffect(() => {
     if (currentUser && 
         !(currentUser.office === 'Tesorero' || 
           currentUser.office === 'Venerable Maestro' || 
-          currentUser.degree >= 3)) {
-      navigate('/');
+          currentUser.office === 'Secretario' ||
+          currentUser.is_admin)) {
+      showNotification('No tienes permisos para acceder a esta sección', 'error');
+      navigate('/dashboard');
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, showNotification]);
 
-  // Cargar pagos al iniciar y cuando cambian los filtros
+  // Cargar datos iniciales
   useEffect(() => {
-    const fetchPayments = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
         
+        // Cargar lista de miembros
+        const membersResponse = await treasuryService.getMembersList();
+        setMembers(membersResponse.data || []);
+        
+        // Cargar tipos de cuotas
+        const feeTypesResponse = await treasuryService.getFeeTypes();
+        setFeeTypes(feeTypesResponse.data || []);
+        
+        // Cargar pagos con paginación
         const params = {
-          page: pagination.page,
-          page_size: pagination.pageSize,
-          ordering: filters.sort,
-          status: filters.status !== 'all' ? filters.status : undefined,
-          date_range: filters.date_range !== 'all' ? filters.date_range : undefined,
-          search: filters.search || undefined
+          page: pagination.currentPage,
+          limit: pagination.itemsPerPage
         };
         
-        const response = await treasuryService.getAllPayments(params);
+        const paymentsResponse = await treasuryService.getPayments(params);
+        setPayments(paymentsResponse.data.results || []);
+        setFilteredPayments(paymentsResponse.data.results || []);
         
-        setPayments(response.data.results || []);
-        setPagination(prev => ({
-          ...prev,
-          total: response.data.count || 0
-        }));
-      } catch (e) {
-        setError('Error al cargar la lista de pagos');
-        console.error('Error al cargar pagos:', e);
+        // Actualizar información de paginación
+        setPagination({
+          ...pagination,
+          totalPages: Math.ceil(paymentsResponse.data.count / pagination.itemsPerPage),
+          totalItems: paymentsResponse.data.count
+        });
+      } catch (err) {
+        console.error('Error al cargar datos iniciales:', err);
+        showNotification('Error al cargar los datos necesarios', 'error');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchPayments();
-  }, [filters, pagination.page, pagination.pageSize]);
+    fetchInitialData();
+  }, [pagination.currentPage, pagination.itemsPerPage, showNotification]);
 
-  // Manejar cambios en los filtros
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Resetear a la primera página cuando cambian los filtros
-    setPagination(prev => ({
-      ...prev,
-      page: 1
-    }));
+  // Filtrar pagos
+  useEffect(() => {
+    const applyFilters = async () => {
+      try {
+        setLoading(true);
+        
+        // Construir parámetros de filtro
+        const params = {
+          page: 1, // Resetear a primera página al filtrar
+          limit: pagination.itemsPerPage,
+          search: searchTerm || undefined,
+          member_id: selectedMember || undefined,
+          fee_type_id: selectedFeeType || undefined,
+          status: selectedStatus || undefined,
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined
+        };
+        
+        // Filtrar desde el servidor
+        const response = await treasuryService.getPayments(params);
+        
+        setFilteredPayments(response.data.results || []);
+        
+        // Actualizar información de paginación
+        setPagination({
+          ...pagination,
+          currentPage: 1,
+          totalPages: Math.ceil(response.data.count / pagination.itemsPerPage),
+          totalItems: response.data.count
+        });
+      } catch (err) {
+        console.error('Error al filtrar pagos:', err);
+        showNotification('Error al filtrar pagos', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Solo aplicar filtros si hay algún filtro activo
+    if (searchTerm || selectedMember || selectedFeeType || selectedStatus || dateFrom || dateTo) {
+      applyFilters();
+    } else if (payments.length > 0) {
+      // Si no hay filtros, mostrar todos los pagos cargados
+      setFilteredPayments(payments);
+    }
+  }, [searchTerm, selectedMember, selectedFeeType, selectedStatus, dateFrom, dateTo, pagination.itemsPerPage, showNotification]);
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
   };
 
-  // Manejar cambios de página
+  const handleMemberFilter = (e) => {
+    setSelectedMember(e.target.value);
+  };
+
+  const handleFeeTypeFilter = (e) => {
+    setSelectedFeeType(e.target.value);
+  };
+
+  const handleStatusFilter = (e) => {
+    setSelectedStatus(e.target.value);
+  };
+
+  const handleDateFromChange = (e) => {
+    setDateFrom(e.target.value);
+  };
+
+  const handleDateToChange = (e) => {
+    setDateTo(e.target.value);
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setSelectedMember('');
+    setSelectedFeeType('');
+    setSelectedStatus('');
+    setDateFrom('');
+    setDateTo('');
+  };
+
   const handlePageChange = (newPage) => {
-    setPagination(prev => ({
-      ...prev,
-      page: newPage
-    }));
-  };
-
-  // Navegar al detalle de un pago
-  const handleViewPayment = (id) => {
-    navigate(`/treasury/payments/${id}`);
-  };
-
-  // Navegar a la página de creación de pago
-  const handleCreatePayment = () => {
-    navigate('/treasury/payments/new');
-  };
-
-  // Marcar pago como completado
-  const handleMarkAsCompleted = async (id) => {
-    try {
-      await treasuryService.updatePaymentStatus(id, { status: 'completed' });
-      
-      // Actualizar la lista de pagos
-      setPayments(prevPayments => 
-        prevPayments.map(payment => 
-          payment.id === id ? { ...payment, status: 'completed' } : payment
-        )
-      );
-    } catch (e) {
-      setError('Error al actualizar el estado del pago');
-      console.error('Error al actualizar pago:', e);
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      setPagination({
+        ...pagination,
+        currentPage: newPage
+      });
     }
   };
 
-  // Calcular el rango de pagos mostrados
-  const startItem = (pagination.page - 1) * pagination.pageSize + 1;
-  const endItem = Math.min(pagination.page * pagination.pageSize, pagination.total);
+  const handleItemsPerPageChange = (e) => {
+    const newItemsPerPage = parseInt(e.target.value, 10);
+    setPagination({
+      ...pagination,
+      itemsPerPage: newItemsPerPage,
+      currentPage: 1 // Resetear a primera página
+    });
+  };
+
+  const handleViewPayment = (paymentId) => {
+    navigate(`/treasury/payments/detail/${paymentId}`);
+  };
+
+  const handleEditPayment = (paymentId) => {
+    navigate(`/treasury/payments/edit/${paymentId}`);
+  };
+
+  const handleAddPayment = () => {
+    navigate('/treasury/payments/new');
+  };
+
+  const handleSendReminder = async (paymentId) => {
+    try {
+      await treasuryService.sendPaymentReminder(paymentId);
+      showNotification('Recordatorio enviado correctamente', 'success');
+    } catch (err) {
+      console.error('Error al enviar recordatorio:', err);
+      showNotification('Error al enviar recordatorio', 'error');
+    }
+  };
+
+  // Función para obtener el nombre del miembro
+  const getMemberName = (memberId) => {
+    const member = members.find(m => m.id === memberId);
+    return member ? `${member.first_name} ${member.last_name}` : 'Desconocido';
+  };
+
+  // Función para obtener el nombre del tipo de cuota
+  const getFeeTypeName = (feeTypeId) => {
+    const feeType = feeTypes.find(ft => ft.id === feeTypeId);
+    return feeType ? feeType.name : 'Desconocido';
+  };
+
+  // Función para formatear fecha
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
+  // Función para formatear monto
+  const formatAmount = (amount, currency = 'USD') => {
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: currency
+    }).format(amount);
+  };
+
+  if (loading && payments.length === 0) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Gestión de Pagos</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800">Pagos</h1>
         <button
-          onClick={handleCreatePayment}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md flex items-center"
+          onClick={handleAddPayment}
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
           Nuevo Pago
@@ -134,315 +254,320 @@ const PaymentsList = () => {
       </div>
       
       {/* Filtros */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+              Buscar
+            </label>
             <input
               type="text"
               id="search"
-              name="search"
-              value={filters.search}
-              onChange={handleFilterChange}
-              placeholder="Nombre, concepto, referencia..."
+              value={searchTerm}
+              onChange={handleSearch}
+              placeholder="Referencia, descripción..."
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>
           
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <label htmlFor="member" className="block text-sm font-medium text-gray-700 mb-1">
+              Miembro
+            </label>
+            <select
+              id="member"
+              value={selectedMember}
+              onChange={handleMemberFilter}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            >
+              <option value="">Todos los miembros</option>
+              {members.map(member => (
+                <option key={member.id} value={member.id}>
+                  {member.first_name} {member.last_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label htmlFor="feeType" className="block text-sm font-medium text-gray-700 mb-1">
+              Tipo de Cuota
+            </label>
+            <select
+              id="feeType"
+              value={selectedFeeType}
+              onChange={handleFeeTypeFilter}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            >
+              <option value="">Todos los tipos</option>
+              {feeTypes.map(feeType => (
+                <option key={feeType.id} value={feeType.id}>
+                  {feeType.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+              Estado
+            </label>
             <select
               id="status"
-              name="status"
-              value={filters.status}
-              onChange={handleFilterChange}
+              value={selectedStatus}
+              onChange={handleStatusFilter}
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
-              <option value="all">Todos</option>
-              <option value="pending">Pendientes</option>
-              <option value="completed">Completados</option>
-              <option value="overdue">Vencidos</option>
-              <option value="cancelled">Cancelados</option>
+              <option value="">Todos los estados</option>
+              <option value="pending">Pendiente</option>
+              <option value="paid">Pagado</option>
+              <option value="overdue">Vencido</option>
+              <option value="cancelled">Cancelado</option>
             </select>
           </div>
           
           <div>
-            <label htmlFor="date_range" className="block text-sm font-medium text-gray-700 mb-1">Período</label>
-            <select
-              id="date_range"
-              name="date_range"
-              value={filters.date_range}
-              onChange={handleFilterChange}
+            <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha Desde
+            </label>
+            <input
+              type="date"
+              id="dateFrom"
+              value={dateFrom}
+              onChange={handleDateFromChange}
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-              <option value="all">Todos</option>
-              <option value="current_month">Mes actual</option>
-              <option value="last_month">Mes anterior</option>
-              <option value="current_quarter">Trimestre actual</option>
-              <option value="current_year">Año actual</option>
-            </select>
+            />
           </div>
           
           <div>
-            <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
-            <select
-              id="sort"
-              name="sort"
-              value={filters.sort}
-              onChange={handleFilterChange}
+            <label htmlFor="dateTo" className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha Hasta
+            </label>
+            <input
+              type="date"
+              id="dateTo"
+              value={dateTo}
+              onChange={handleDateToChange}
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-              <option value="-due_date">Fecha de vencimiento (reciente)</option>
-              <option value="due_date">Fecha de vencimiento (antigua)</option>
-              <option value="-amount">Monto (mayor a menor)</option>
-              <option value="amount">Monto (menor a mayor)</option>
-              <option value="member__symbolic_name">Miembro (alfabético)</option>
-            </select>
+            />
           </div>
+        </div>
+        
+        <div className="flex justify-end">
+          <button
+            onClick={handleResetFilters}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Limpiar Filtros
+          </button>
         </div>
       </div>
       
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
-      
-      {/* Lista de pagos */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      {/* Tabla de pagos */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        {loading && (
+          <div className="flex justify-center items-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-indigo-500"></div>
           </div>
-        ) : payments.length > 0 ? (
-          <div>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Miembro
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Concepto
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Monto
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vencimiento
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th scope="col" className="relative px-6 py-3">
-                    <span className="sr-only">Acciones</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {payments.map((payment) => (
+        )}
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Referencia
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Miembro
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tipo
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Monto
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Fecha
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredPayments.length > 0 ? (
+                filteredPayments.map(payment => (
                   <tr key={payment.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          {payment.member.profile_image ? (
-                            <img className="h-10 w-10 rounded-full" src={payment.member.profile_image} alt="" />
-                          ) : (
-                            <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                              <span className="text-indigo-800 font-medium">
-                                {payment.member.symbolic_name ? payment.member.symbolic_name.charAt(0) : 
-                                 payment.member.first_name ? payment.member.first_name.charAt(0) : 'M'}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {payment.member.symbolic_name || `${payment.member.first_name} ${payment.member.last_name}`}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {payment.member.email}
-                          </div>
-                        </div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {payment.reference_number}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{payment.concept}</div>
-                      <div className="text-sm text-gray-500">{payment.reference || '-'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${payment.amount.toLocaleString()}
+                      <div className="text-sm text-gray-500">
+                        {payment.description}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {new Date(payment.due_date).toLocaleDateString()}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(payment.due_date) < new Date() && payment.status === 'pending' ? 
-                          `Vencido hace ${Math.floor((new Date() - new Date(payment.due_date)) / (1000 * 60 * 60 * 24))} días` : ''}
+                        {getMemberName(payment.member_id)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        payment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        payment.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
+                      <div className="text-sm text-gray-900">
+                        {getFeeTypeName(payment.fee_type_id)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatAmount(payment.amount, payment.currency)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {formatDate(payment.due_date)}
+                      </div>
+                      {payment.payment_date && (
+                        <div className="text-sm text-gray-500">
+                          Pagado: {formatDate(payment.payment_date)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        payment.status === 'paid' 
+                          ? 'bg-green-100 text-green-800' 
+                          : payment.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : payment.status === 'overdue'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {payment.status === 'completed' ? 'Completado' :
-                         payment.status === 'pending' ? 'Pendiente' :
-                         payment.status === 'overdue' ? 'Vencido' :
-                         'Cancelado'}
+                        {payment.status === 'paid' 
+                          ? 'Pagado' 
+                          : payment.status === 'pending'
+                            ? 'Pendiente'
+                            : payment.status === 'overdue'
+                              ? 'Vencido'
+                              : 'Cancelado'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
-                        {payment.status === 'pending' && (
-                          <button
-                            onClick={() => handleMarkAsCompleted(payment.id)}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            Completar
-                          </button>
-                        )}
                         <button
                           onClick={() => handleViewPayment(payment.id)}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
-                          Detalles
+                          Ver
                         </button>
+                        {(payment.status === 'pending' || payment.status === 'overdue') && (
+                          <>
+                            <button
+                              onClick={() => handleEditPayment(payment.id)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => handleSendReminder(payment.id)}
+                              className="text-orange-600 hover:text-orange-900"
+                            >
+                              Recordar
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            
-            {/* Paginación */}
-            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-              <div className="flex-1 flex justify-between sm:hidden">
-                <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page === 1}
-                  className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                    pagination.page === 1 ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Anterior
-                </button>
-                <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page * pagination.pageSize >= pagination.total}
-                  className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                    pagination.page * pagination.pageSize >= pagination.total ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Siguiente
-                </button>
-              </div>
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Mostrando <span className="font-medium">{startItem}</span> a <span className="font-medium">{endItem}</span> de{' '}
-                    <span className="font-medium">{pagination.total}</span> resultados
-                  </p>
-                </div>
-                <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <button
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                      disabled={pagination.page === 1}
-                      className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                        pagination.page === 1 ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="sr-only">Anterior</span>
-                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    
-                    {/* Números de página */}
-                    {Array.from({ length: Math.ceil(pagination.total / pagination.pageSize) }, (_, i) => i + 1)
-                      .filter(page => {
-                        // Mostrar solo algunas páginas para no sobrecargar la UI
-                        const currentPage = pagination.page;
-                        return page === 1 || 
-                               page === Math.ceil(pagination.total / pagination.pageSize) || 
-                               (page >= currentPage - 1 && page <= currentPage + 1);
-                      })
-                      .map((page, index, array) => {
-                        // Agregar elipsis si hay saltos en la numeración
-                        const showEllipsisBefore = index > 0 && page > array[index - 1] + 1;
-                        const showEllipsisAfter = index < array.length - 1 && page < array[index + 1] - 1;
-                        
-                        return (
-                          <React.Fragment key={page}>
-                            {showEllipsisBefore && (
-                              <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                ...
-                              </span>
-                            )}
-                            
-                            <button
-                              onClick={() => handlePageChange(page)}
-                              className={`relative inline-flex items-center px-4 py-2 border ${
-                                page === pagination.page
-                                  ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                              } text-sm font-medium`}
-                            >
-                              {page}
-                            </button>
-                            
-                            {showEllipsisAfter && (
-                              <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                ...
-                              </span>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    
-                    <button
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page * pagination.pageSize >= pagination.total}
-                      className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                        pagination.page * pagination.pageSize >= pagination.total ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="sr-only">Siguiente</span>
-                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </nav>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No se encontraron pagos</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Intenta ajustar los filtros de búsqueda o crea un nuevo pago.
-            </p>
-            <div className="mt-6">
-              <button
-                onClick={handleCreatePayment}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
+                    {loading ? 'Cargando pagos...' : 'No se encontraron pagos con los filtros seleccionados'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Paginación */}
+        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 sm:px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-sm text-gray-700 mr-2">
+                Mostrar
+              </span>
+              <select
+                value={pagination.itemsPerPage}
+                onChange={handleItemsPerPageChange}
+                className="mr-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               >
-                <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Nuevo Pago
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span className="text-sm text-gray-700">
+                de {pagination.totalItems} resultados
+              </span>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={pagination.currentPage === 1}
+                className={`px-3 py-1 rounded-md ${
+                  pagination.currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                &laquo;
+              </button>
+              <button
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={pagination.currentPage === 1}
+                className={`px-3 py-1 rounded-md ${
+                  pagination.currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                &lsaquo;
+              </button>
+              
+              <span className="text-sm text-gray-700">
+                Página {pagination.currentPage} de {pagination.totalPages}
+              </span>
+              
+              <button
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={pagination.currentPage === pagination.totalPages}
+                className={`px-3 py-1 rounded-md ${
+                  pagination.currentPage === pagination.totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                &rsaquo;
+              </button>
+              <button
+                onClick={() => handlePageChange(pagination.totalPages)}
+                disabled={pagination.currentPage === pagination.totalPages}
+                className={`px-3 py-1 rounded-md ${
+                  pagination.currentPage === pagination.totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                &raquo;
               </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
