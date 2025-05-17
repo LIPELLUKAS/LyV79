@@ -1,6 +1,11 @@
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.conf import settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,6 +17,7 @@ import pyotp
 import qrcode
 import io
 import base64
+import logging
 
 from .serializers import (
     UserSerializer, UserCreateSerializer, PasswordChangeSerializer,
@@ -20,6 +26,7 @@ from .serializers import (
 )
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -76,12 +83,14 @@ class LoginView(APIView):
         user = authenticate(username=username, password=password)
         
         if not user:
+            logger.warning(f"Intento de inicio de sesión fallido para el usuario: {username}")
             return Response(
                 {'detail': 'Credenciales inválidas.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         
         if not user.is_active:
+            logger.warning(f"Intento de inicio de sesión con cuenta desactivada: {username}")
             return Response(
                 {'detail': 'La cuenta está desactivada.'},
                 status=status.HTTP_401_UNAUTHORIZED
@@ -89,6 +98,7 @@ class LoginView(APIView):
         
         # Verificar si el usuario tiene 2FA habilitado
         if user.two_factor_enabled:
+            logger.info(f"Solicitando verificación 2FA para usuario: {username}")
             return Response({
                 'detail': 'Se requiere autenticación de dos factores.',
                 'requires_2fa': True,
@@ -98,9 +108,23 @@ class LoginView(APIView):
         # Si no tiene 2FA, generar tokens directamente
         refresh = RefreshToken.for_user(user)
         
+        # Registrar inicio de sesión exitoso
+        logger.info(f"Inicio de sesión exitoso para usuario: {username}")
+        
         return Response({
             'refresh': str(refresh),
             'access': str(refresh.access_token),
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'is_staff': user.is_staff,
+                'is_admin': user.is_superuser,
+                'degree': user.degree,
+                'symbolic_name': user.symbolic_name
+            }
         })
 
 class TwoFactorVerifyView(APIView):
@@ -122,6 +146,7 @@ class TwoFactorVerifyView(APIView):
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
+            logger.warning(f"Intento de verificación 2FA para usuario inexistente ID: {user_id}")
             return Response(
                 {'detail': 'Usuario no encontrado.'},
                 status=status.HTTP_404_NOT_FOUND
@@ -133,11 +158,24 @@ class TwoFactorVerifyView(APIView):
             if device.verify_token(code):
                 # Código válido, generar tokens
                 refresh = RefreshToken.for_user(user)
+                logger.info(f"Verificación 2FA exitosa para usuario: {user.username}")
                 return Response({
                     'refresh': str(refresh),
                     'access': str(refresh.access_token),
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'is_staff': user.is_staff,
+                        'is_admin': user.is_superuser,
+                        'degree': user.degree,
+                        'symbolic_name': user.symbolic_name
+                    }
                 })
         
+        logger.warning(f"Código 2FA inválido para usuario: {user.username}")
         return Response(
             {'detail': 'Código inválido.'},
             status=status.HTTP_401_UNAUTHORIZED
@@ -190,6 +228,7 @@ class TwoFactorSetupView(APIView):
         img.save(buffer, format="PNG")
         qr_code_base64 = base64.b64encode(buffer.getvalue()).decode()
         
+        logger.info(f"Configuración 2FA iniciada para usuario: {user.username}")
         return Response({
             'secret_key': secret_key,
             'qr_code': f"data:image/png;base64,{qr_code_base64}"
@@ -211,6 +250,7 @@ class TwoFactorSetupView(APIView):
         try:
             device = TOTPDevice.objects.get(user=user, confirmed=False)
         except TOTPDevice.DoesNotExist:
+            logger.warning(f"No se encontró dispositivo 2FA pendiente para usuario: {user.username}")
             return Response(
                 {'detail': 'No se encontró un dispositivo pendiente de confirmación.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -226,8 +266,10 @@ class TwoFactorSetupView(APIView):
             user.two_factor_enabled = True
             user.save()
             
+            logger.info(f"2FA activado correctamente para usuario: {user.username}")
             return Response({'detail': 'Autenticación de dos factores activada correctamente.'})
         
+        logger.warning(f"Código de verificación 2FA inválido para usuario: {user.username}")
         return Response(
             {'detail': 'Código inválido.'},
             status=status.HTTP_400_BAD_REQUEST
@@ -247,11 +289,65 @@ class PasswordResetRequestView(APIView):
         
         email = serializer.validated_data['email']
         
-        # En una implementación real, aquí se enviaría un correo con el token
-        # Por ahora, solo devolvemos un mensaje de éxito
+        # Buscar usuario por email
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # No revelar si el email existe o no por seguridad
+            logger.warning(f"Intento de recuperación de contraseña para email no registrado: {email}")
+            return Response({
+                'detail': 'Se ha enviado un enlace de restablecimiento a tu correo electrónico si está registrado en nuestro sistema.'
+            })
+        
+        # Generar token de restablecimiento
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # Construir URL de restablecimiento
+        reset_url = f"{settings.FRONTEND_URL}/auth/reset-password/{uid}/{token}/"
+        
+        # Preparar correo
+        subject = 'Restablecimiento de contraseña - Sistema Masónico Luz y Verdad'
+        html_message = render_to_string('password_reset_email.html', {
+            'user': user,
+            'reset_url': reset_url,
+            'valid_hours': 24,
+        })
+        plain_message = f"""
+        Hola {user.first_name or user.username},
+        
+        Has solicitado restablecer tu contraseña en el Sistema Masónico Luz y Verdad.
+        
+        Por favor, haz clic en el siguiente enlace para crear una nueva contraseña:
+        {reset_url}
+        
+        Este enlace es válido por 24 horas.
+        
+        Si no has solicitado este cambio, puedes ignorar este correo.
+        
+        Fraternalmente,
+        Sistema Masónico Luz y Verdad
+        """
+        
+        try:
+            # Enviar correo
+            send_mail(
+                subject=subject,
+                message=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            logger.info(f"Correo de recuperación de contraseña enviado a: {email}")
+        except Exception as e:
+            logger.error(f"Error al enviar correo de recuperación: {str(e)}")
+            return Response({
+                'detail': 'Error al enviar el correo de restablecimiento. Por favor, intenta nuevamente más tarde.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response({
-            'detail': 'Se ha enviado un enlace de restablecimiento a tu correo electrónico.'
+            'detail': 'Se ha enviado un enlace de restablecimiento a tu correo electrónico si está registrado en nuestro sistema.'
         })
 
 class PasswordResetConfirmView(APIView):
@@ -266,9 +362,33 @@ class PasswordResetConfirmView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        # En una implementación real, aquí se verificaría el token y se cambiaría la contraseña
-        # Por ahora, solo devolvemos un mensaje de éxito
+        # Obtener datos validados
+        uid = serializer.validated_data['uid']
+        token = serializer.validated_data['token']
+        password = serializer.validated_data['password']
         
+        try:
+            # Decodificar UID para obtener el ID del usuario
+            user_id = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=user_id)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            logger.warning(f"Intento de restablecimiento de contraseña con UID inválido: {uid}")
+            return Response({
+                'detail': 'Enlace de restablecimiento inválido.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verificar token
+        if not default_token_generator.check_token(user, token):
+            logger.warning(f"Intento de restablecimiento de contraseña con token inválido para usuario: {user.username}")
+            return Response({
+                'detail': 'El enlace de restablecimiento es inválido o ha expirado.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Cambiar contraseña
+        user.set_password(password)
+        user.save()
+        
+        logger.info(f"Contraseña restablecida correctamente para usuario: {user.username}")
         return Response({
             'detail': 'Contraseña restablecida correctamente.'
         })
