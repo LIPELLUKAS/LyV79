@@ -1,25 +1,60 @@
-import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
-
-// Contextos
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import { ConfigProvider } from './contexts/ConfigContext';
-import { NotificationProvider } from './contexts/NotificationContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import DashboardLayout from './layouts/DashboardLayout';
+import LoginPage from './pages/auth/LoginPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import MembersPage from './pages/members/MembersPage';
+import TreasuryPage from './pages/treasury/TreasuryPage';
+import CommunicationsPage from './pages/communications/CommunicationsPage';
+import RitualsPage from './pages/rituals/RitualsPage';
+import LibraryPage from './pages/library/LibraryPage';
+import ProfilePage from './pages/profile/ProfilePage';
+import NotFoundPage from './pages/NotFoundPage';
+import LoadingScreen from './components/ui/LoadingScreen';
 
-// Rutas
-import AppRoutes from './routes/AppRoutes';
+import './App.css';
 
 function App() {
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    // Simulación de carga inicial
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
-    <Router>
-      <AuthProvider>
-        <ConfigProvider>
-          <NotificationProvider>
-            <AppRoutes />
-          </NotificationProvider>
-        </ConfigProvider>
-      </AuthProvider>
-    </Router>
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        
+        <Route path="/" element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="members/*" element={<MembersPage />} />
+          <Route path="treasury/*" element={<TreasuryPage />} />
+          <Route path="communications/*" element={<CommunicationsPage />} />
+          <Route path="rituals/*" element={<RitualsPage />} />
+          <Route path="library/*" element={<LibraryPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
+        
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </AuthProvider>
   );
 }
 
