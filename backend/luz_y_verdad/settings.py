@@ -11,7 +11,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-luz-y-verdad-s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = ['*']  # Permitir todos los hosts para desarrollo
 
 # Application definition
 INSTALLED_APPS = [
@@ -149,7 +149,7 @@ AUTHENTICATION_BACKENDS = (
 )
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost,http://127.0.0.1').split(',')
+CORS_ALLOW_ALL_ORIGINS = True  # Permitir CORS desde cualquier origen para desarrollo
 CORS_ALLOW_CREDENTIALS = True
 
 # Celery settings
