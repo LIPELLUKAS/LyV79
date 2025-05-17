@@ -133,6 +133,21 @@ export const memberService = {
     return await api.delete(`/members/${id}/`);
   },
   
+  getEvents: async (params) => {
+    return await api.get('/communications/events/', { params });
+  },
+  
+  getEventAttendance: async (eventId) => {
+    return await api.get(`/members/attendance/`, { params: { event_id: eventId } });
+  },
+  
+  saveEventAttendance: async (eventId, attendanceData) => {
+    return await api.post(`/members/attendance/batch/`, { 
+      event_id: eventId, 
+      attendance: attendanceData 
+    });
+  },
+  
   getMemberDocuments: async (id) => {
     return await api.get(`/members/${id}/documents/`);
   },
@@ -182,6 +197,14 @@ export const treasuryService = {
   
   deleteFee: async (id) => {
     return await api.delete(`/treasury/fees/${id}/`);
+  },
+  
+  getFinancialSummary: async () => {
+    return await api.get('/treasury/summary/');
+  },
+  
+  getRecentTransactions: async (limit = 10) => {
+    return await api.get('/treasury/transactions/', { params: { limit } });
   },
   
   getAllPayments: async (params) => {

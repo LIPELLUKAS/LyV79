@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../services/api';
+import authService from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
@@ -89,12 +89,12 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await authService.login(username, password);
+      const response = await authService.login({ username, password });
       
       // Verificar si se requiere 2FA
-      if (response.requires_2fa) {
+      if (response.data.requires_2fa) {
         // Guardar el token temporal para la verificación 2FA
-        localStorage.setItem('temp_token', response.temp_token);
+        localStorage.setItem('temp_token', response.data.temp_token);
         
         // Redirigir a la página de verificación 2FA
         navigate('/auth/verify-2fa');
@@ -102,8 +102,8 @@ export const AuthProvider = ({ children }) => {
       }
       
       // No se requiere 2FA, guardar tokens y obtener usuario
-      localStorage.setItem('token', response.access);
-      localStorage.setItem('refreshToken', response.refresh);
+      localStorage.setItem('token', response.data.access);
+      localStorage.setItem('refreshToken', response.data.refresh);
       
       const userResponse = await authService.getCurrentUser();
       setCurrentUser(userResponse.data);
@@ -138,8 +138,8 @@ export const AuthProvider = ({ children }) => {
       
       // Guardar tokens y obtener usuario
       localStorage.removeItem('temp_token');
-      localStorage.setItem('token', response.access);
-      localStorage.setItem('refreshToken', response.refresh);
+      localStorage.setItem('token', response.data.access);
+      localStorage.setItem('refreshToken', response.data.refresh);
       
       const userResponse = await authService.getCurrentUser();
       setCurrentUser(userResponse.data);
@@ -174,8 +174,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      await authService.register(userData);
-      return { success: true };
+      const response = await authService.register(userData);
+      return { success: true, data: response.data };
     } catch (e) {
       setError(e.response?.data?.detail || 'Error al registrar usuario');
       return { success: false, error: e.response?.data?.detail || 'Error al registrar usuario' };
@@ -190,8 +190,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      await authService.forgotPassword(email);
-      return { success: true };
+      const response = await authService.forgotPassword(email);
+      return { success: true, data: response.data };
     } catch (e) {
       setError(e.response?.data?.detail || 'Error al solicitar restablecimiento de contraseña');
       return { success: false, error: e.response?.data?.detail || 'Error al solicitar restablecimiento de contraseña' };
@@ -206,8 +206,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      await authService.resetPassword(token, password);
-      return { success: true };
+      const response = await authService.resetPassword(token, password);
+      return { success: true, data: response.data };
     } catch (e) {
       setError(e.response?.data?.detail || 'Error al restablecer contraseña');
       return { success: false, error: e.response?.data?.detail || 'Error al restablecer contraseña' };
@@ -230,7 +230,7 @@ export const AuthProvider = ({ children }) => {
         setUserRole(response.data.roles[0]);
       }
       
-      return { success: true };
+      return { success: true, data: response.data };
     } catch (e) {
       setError(e.response?.data?.detail || 'Error al actualizar perfil');
       return { success: false, error: e.response?.data?.detail || 'Error al actualizar perfil' };
@@ -261,13 +261,13 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      await authService.disable2FA();
+      const response = await authService.disable2FA();
       
       // Actualizar información del usuario
       const userResponse = await authService.getCurrentUser();
       setCurrentUser(userResponse.data);
       
-      return { success: true };
+      return { success: true, data: response.data };
     } catch (e) {
       setError(e.response?.data?.detail || 'Error al deshabilitar 2FA');
       return { success: false, error: e.response?.data?.detail || 'Error al deshabilitar 2FA' };

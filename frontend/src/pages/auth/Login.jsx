@@ -26,6 +26,15 @@ const Login = () => {
     setError('');
 
     try {
+      // Validar campos
+      if (!username.trim()) {
+        throw new Error('El nombre de usuario es obligatorio');
+      }
+      
+      if (!password.trim()) {
+        throw new Error('La contraseña es obligatoria');
+      }
+      
       const result = await login(username, password);
       
       if (result.requires_2fa) {
@@ -38,7 +47,7 @@ const Login = () => {
         setError(result.error || 'Error al iniciar sesión');
       }
     } catch (err) {
-      setError('Error al conectar con el servidor');
+      setError(err.message || 'Error al conectar con el servidor');
       console.error(err);
     } finally {
       setIsLoading(false);
