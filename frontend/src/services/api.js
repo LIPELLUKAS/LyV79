@@ -51,6 +51,16 @@ api.interceptors.response.use(
   }
 );
 
+// Servicios de dashboard
+export const dashboardService = {
+  getStats: () => api.get('/dashboard/stats/'),
+  getRecentActivities: () => api.get('/dashboard/activities/'),
+  getUpcomingEvents: () => api.get('/dashboard/events/upcoming/'),
+  getPendingPayments: () => api.get('/dashboard/payments/pending/'),
+  getActiveMembers: () => api.get('/dashboard/members/active/'),
+  getSystemStatus: () => api.get('/dashboard/system/status/'),
+};
+
 // Servicios de autenticación
 export const authService = {
   login: (credentials) => api.post('/auth/login/', credentials),
@@ -132,6 +142,11 @@ export const libraryService = {
   deleteCategory: (id) => api.delete(`/library/categories/${id}/`),
   searchDocuments: (query) => api.get('/library/documents/search/', { params: { query } }),
   downloadDocument: (id) => api.get(`/library/documents/${id}/download/`, { responseType: 'blob' }),
+  uploadDocument: (formData) => api.post('/library/documents/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
 };
 
 // Servicios de rituales
