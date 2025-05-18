@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
 import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
-import MembersPage from './pages/members/MembersPage';
+import MembersRoutes from './pages/members/MembersRoutes';
 import TreasuryPage from './pages/treasury/TreasuryPage';
 import CommunicationsPage from './pages/communications/CommunicationsPage';
 import RitualsPage from './pages/rituals/RitualsPage';
@@ -44,7 +44,7 @@ function App() {
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="members/*" element={<MembersPage />} />
+          <Route path="members/*" element={<MembersRoutes />} />
           <Route path="treasury/*" element={<TreasuryPage />} />
           <Route path="communications/*" element={<CommunicationsPage />} />
           <Route path="rituals/*" element={<RitualsPage />} />
