@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const MembersPage = () => {
+  const navigate = useNavigate();
+  
   // Datos simulados para la página de miembros
   const members = [
     { id: 1, name: 'Juan Pérez', grade: 'Maestro Masón', lodge: 'Luz y Verdad #79', status: 'Activo', lastPayment: '01/05/2025' },
@@ -10,11 +13,28 @@ const MembersPage = () => {
     { id: 5, name: 'Fernando López', grade: 'Maestro Masón', lodge: 'Luz y Verdad #79', status: 'Activo', lastPayment: '01/05/2025' },
   ];
 
+  // Función para manejar la navegación al formulario de nuevo miembro
+  const handleAddMember = () => {
+    navigate('/members/new');
+  };
+
+  // Funciones para manejar la visualización y edición de miembros
+  const handleViewMember = (memberId) => {
+    navigate(`/members/${memberId}`);
+  };
+
+  const handleEditMember = (memberId) => {
+    navigate(`/members/edit/${memberId}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Gestión de Miembros</h1>
-        <button className="btn btn-primary">
+        <button 
+          className="btn btn-primary"
+          onClick={handleAddMember}
+        >
           Nuevo Miembro
         </button>
       </div>
@@ -112,8 +132,18 @@ const MembersPage = () => {
                   {member.lastPayment}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-masonic-blue hover:text-blue-900 mr-3">Ver</button>
-                  <button className="text-masonic-blue hover:text-blue-900 mr-3">Editar</button>
+                  <button 
+                    className="text-masonic-blue hover:text-blue-900 mr-3"
+                    onClick={() => handleViewMember(member.id)}
+                  >
+                    Ver
+                  </button>
+                  <button 
+                    className="text-masonic-blue hover:text-blue-900 mr-3"
+                    onClick={() => handleEditMember(member.id)}
+                  >
+                    Editar
+                  </button>
                 </td>
               </tr>
             ))}
