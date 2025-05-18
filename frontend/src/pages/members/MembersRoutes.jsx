@@ -1,9 +1,9 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import MembersList from './pages/members/MembersList';
-import MemberDetail from './pages/members/MemberDetail';
-import MemberForm from './pages/members/MemberForm';
-import AttendanceRegister from './pages/members/AttendanceRegister';
+import MembersList from './MembersList';
+import MemberDetail from './MemberDetail';
+import MemberForm from './MemberForm';
+import AttendanceRegister from './AttendanceRegister';
 
 const MembersRoutes = () => {
   return (

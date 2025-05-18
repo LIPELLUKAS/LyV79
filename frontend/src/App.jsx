@@ -6,7 +6,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import MembersRoutes from './pages/members/MembersRoutes';
-import TreasuryPage from './pages/treasury/TreasuryPage';
+import TreasuryRoutes from './pages/treasury/TreasuryRoutes';
 import CommunicationsPage from './pages/communications/CommunicationsPage';
 import RitualsPage from './pages/rituals/RitualsPage';
 import LibraryPage from './pages/library/LibraryPage';
@@ -45,7 +45,7 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="members/*" element={<MembersRoutes />} />
-          <Route path="treasury/*" element={<TreasuryPage />} />
+          <Route path="treasury/*" element={<TreasuryRoutes />} />
           <Route path="communications/*" element={<CommunicationsPage />} />
           <Route path="rituals/*" element={<RitualsPage />} />
           <Route path="library/*" element={<LibraryPage />} />
