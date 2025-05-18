@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 
 const Sidebar = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const location = useLocation();
   
   const navigation = [
@@ -62,11 +62,11 @@ const Sidebar = () => {
           <div className="flex-shrink-0 flex border-t border-masonic-blue-800 p-4">
             <div className="flex items-center">
               <div className="h-8 w-8 rounded-full bg-masonic-gold flex items-center justify-center text-white">
-                {user?.name?.charAt(0) || 'U'}
+                {currentUser?.name?.charAt(0) || 'U'}
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-white">{user?.name || 'Usuario'}</p>
-                <p className="text-xs font-medium text-gray-300">{user?.role || 'Rol no definido'}</p>
+                <p className="text-sm font-medium text-white">{currentUser?.name || 'Usuario'}</p>
+                <p className="text-xs font-medium text-gray-300">{currentUser?.role || 'Rol no definido'}</p>
               </div>
             </div>
           </div>

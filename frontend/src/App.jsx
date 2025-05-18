@@ -10,6 +10,7 @@ import TreasuryRoutes from './pages/treasury/TreasuryRoutes';
 import CommunicationsPage from './pages/communications/CommunicationsPage';
 import RitualsPage from './pages/rituals/RitualsPage';
 import LibraryPage from './pages/library/LibraryPage';
+import DocumentList from './pages/library/DocumentList';
 import ProfilePage from './pages/profile/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import LoadingScreen from './components/ui/LoadingScreen';
