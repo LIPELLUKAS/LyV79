@@ -11,6 +11,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import LoginPage from '../pages/auth/Login';
 import ForgotPasswordPage from '../pages/auth/ForgotPassword';
 import ResetPasswordPage from '../pages/auth/ResetPassword';
+import TwoFactorAuthPage from '../pages/auth/TwoFactorAuthPage';
 
 // Páginas principales
 import DashboardPage from '../pages/dashboard/DashboardPage';
@@ -70,6 +71,7 @@ const AppRoutes = () => {
         <Route path="login" element={<AuthRoute><LoginPage /></AuthRoute>} />
         <Route path="forgot-password" element={<AuthRoute><ForgotPasswordPage /></AuthRoute>} />
         <Route path="reset-password/:uid/:token" element={<AuthRoute><ResetPasswordPage /></AuthRoute>} />
+        <Route path="verify-2fa" element={<AuthRoute><TwoFactorAuthPage /></AuthRoute>} />
       </Route>
 
       {/* Rutas protegidas */}

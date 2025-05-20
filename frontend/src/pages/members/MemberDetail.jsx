@@ -1,108 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { memberService } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNotification } from '../../contexts/NotificationContext';
+import { api } from '../../services/api';
 
 const MemberDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  const { showNotification } = useNotification();
-  
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('profile');
-  const [documentLoading, setDocumentLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('info');
 
   useEffect(() => {
-    const fetchMemberDetails = async () => {
+    const fetchMember = async () => {
       try {
         setLoading(true);
-        const response = await memberService.getMember(id);
+        const response = await api.get(`/members/members/${id}/`);
         setMember(response.data);
         setError(null);
       } catch (err) {
-        console.error('Error al cargar detalles del miembro:', err);
-        setError('No se pudo cargar la información del miembro');
-        showNotification('Error al cargar información del miembro', 'error');
+        console.error('Error fetching member details:', err);
+        setError('No se pudo cargar la información del miembro. Por favor, intente nuevamente.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMemberDetails();
-  }, [id, showNotification]);
+    fetchMember();
+  }, [id]);
 
-  const handleDownloadDocument = async (documentId) => {
-    try {
-      setDocumentLoading(true);
-      // Implementar la descarga del documento
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulación
-      showNotification('Documento descargado correctamente', 'success');
-    } catch (err) {
-      console.error('Error al descargar documento:', err);
-      showNotification('Error al descargar el documento', 'error');
-    } finally {
-      setDocumentLoading(false);
-    }
+  const handleEdit = () => {
+    navigate(`/members/edit/${id}`);
   };
 
-  const handleViewDocument = async (documentId) => {
-    try {
-      setDocumentLoading(true);
-      // Implementar la visualización del documento
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulación
-      showNotification('Documento cargado correctamente', 'success');
-      // Aquí se abriría el documento en una nueva ventana o modal
-    } catch (err) {
-      console.error('Error al visualizar documento:', err);
-      showNotification('Error al visualizar el documento', 'error');
-    } finally {
-      setDocumentLoading(false);
-    }
-  };
-
-  const handleRegisterPayment = () => {
-    navigate(`/treasury/payments/new?member=${id}`);
-  };
-
-  const handleAddDocument = () => {
-    navigate(`/members/${id}/documents/new`);
+  const handleBack = () => {
+    navigate('/members');
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      <div className="flex justify-center items-center h-64">
+        <svg className="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-        <p>{error}</p>
-        <button 
-          onClick={() => navigate('/members')}
-          className="mt-2 text-indigo-600 hover:text-indigo-800 font-medium"
-        >
-          Volver al listado de miembros
-        </button>
+      <div className="bg-red-50 dark:bg-red-900 dark:bg-opacity-30 border-l-4 border-red-500 dark:border-red-700 p-4 rounded-md">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            <button 
+              onClick={handleBack}
+              className="mt-2 text-sm font-medium text-red-700 dark:text-red-300 hover:text-red-600 dark:hover:text-red-200"
+            >
+              Volver al directorio
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!member) {
     return (
-      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
-        <p>No se encontró información para el miembro solicitado.</p>
+      <div className="text-center py-8">
+        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+        <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">Miembro no encontrado</h3>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          No se pudo encontrar el miembro solicitado.
+        </p>
         <button 
-          onClick={() => navigate('/members')}
-          className="mt-2 text-indigo-600 hover:text-indigo-800 font-medium"
+          onClick={handleBack}
+          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          Volver al listado de miembros
+          Volver al directorio
         </button>
       </div>
     );
@@ -110,379 +92,353 @@ const MemberDetail = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Encabezado con información básica */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-800">
-            {member.symbolic_name}
-          </h2>
-          <p className="text-gray-600">
-            {member.first_name} {member.last_name} · {member.degree === 1 ? 'Aprendiz' : 
-                                                     member.degree === 2 ? 'Compañero' : 
-                                                     'Maestro Masón'}
-          </p>
-        </div>
-        
-        <div className="mt-4 md:mt-0 flex space-x-2">
-          {(currentUser?.degree >= 3 || currentUser?.office === 'Secretario') && (
-            <button 
-              onClick={() => navigate(`/members/edit/${member.id}`)}
-              className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors duration-200"
+      <div className="flex items-center mb-6">
+        <button
+          onClick={handleBack}
+          className="mr-4 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+        </button>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Perfil de Miembro</h1>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-32 relative">
+          <div className="absolute -bottom-16 left-8">
+            <div className="h-32 w-32 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-700">
+              {member.profile_image ? (
+                <img 
+                  src={member.profile_image} 
+                  alt={member.full_name} 
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-900">
+                  <span className="text-indigo-800 dark:text-indigo-200 font-bold text-2xl">
+                    {member.full_name.split(' ').map(name => name[0]).join('').toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="absolute bottom-4 right-4">
+            <button
+              onClick={handleEdit}
+              className="bg-white text-indigo-600 hover:text-indigo-800 dark:bg-gray-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium py-2 px-4 rounded-md shadow-sm flex items-center"
             >
-              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
               </svg>
               Editar
             </button>
-          )}
-          <button 
-            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-200"
-            onClick={() => window.print()}
-          >
-            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Imprimir
-          </button>
+          </div>
         </div>
-      </div>
 
-      {/* Estado del miembro */}
-      <div className={`mb-6 p-4 rounded-lg ${member.status === 'active' ? 'bg-green-100' : 'bg-red-100'}`}>
-        <div className="flex items-center">
-          <span className={`inline-block w-3 h-3 rounded-full mr-2 ${member.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-          <span className="font-medium">
-            {member.status === 'active' ? 'Miembro Activo' : 'Miembro Inactivo'}
-          </span>
-          {member.office && (
-            <span className="ml-4 px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-full">
-              {member.office}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Pestañas de navegación */}
-      <div className="mb-6 border-b border-gray-200">
-        <nav className="flex space-x-8">
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'profile'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Perfil
-          </button>
-          <button
-            onClick={() => setActiveTab('documents')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'documents'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Documentos
-          </button>
-          <button
-            onClick={() => setActiveTab('progress')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'progress'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Progreso
-          </button>
-          <button
-            onClick={() => setActiveTab('payments')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'payments'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Pagos
-          </button>
-        </nav>
-      </div>
-
-      {/* Contenido de las pestañas */}
-      <div className="bg-white rounded-lg shadow p-6">
-        {activeTab === 'profile' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="pt-16 px-8 pb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Información Personal</h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-500">Nombre Completo</p>
-                  <p>{member.first_name} {member.last_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Nombre de Usuario</p>
-                  <p>{member.username}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Correo Electrónico</p>
-                  <p>{member.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Teléfono</p>
-                  <p>{member.phone_number}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Dirección</p>
-                  <p>{member.address}</p>
-                </div>
-                {member.profile && (
-                  <>
-                    <div>
-                      <p className="text-sm text-gray-500">Fecha de Nacimiento</p>
-                      <p>{member.profile.birth_date ? new Date(member.profile.birth_date).toLocaleDateString() : 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Profesión</p>
-                      <p>{member.profile.profession || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Documento de Identidad</p>
-                      <p>{member.profile.civil_id || 'N/A'}</p>
-                    </div>
-                  </>
-                )}
-              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{member.full_name}</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                {member.current_degree === '1' && 'Aprendiz'}
+                {member.current_degree === '2' && 'Compañero'}
+                {member.current_degree === '3' && 'Maestro'}
+                {member.office && ` • ${member.office}`}
+              </p>
             </div>
-            
-            <div>
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Información Masónica</h3>
-              <div className="space-y-3">
+            <div className="mt-4 md:mt-0">
+              <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full 
+                ${member.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                  member.status === 'inactive' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : 
+                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
+                {member.status === 'active' && 'Activo'}
+                {member.status === 'inactive' && 'Inactivo'}
+                {member.status === 'suspended' && 'Suspendido'}
+              </span>
+            </div>
+          </div>
+
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                className={`${
+                  activeTab === 'info'
+                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                onClick={() => setActiveTab('info')}
+              >
+                Información Personal
+              </button>
+              <button
+                className={`${
+                  activeTab === 'masonic'
+                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                onClick={() => setActiveTab('masonic')}
+              >
+                Historial Masónico
+              </button>
+              <button
+                className={`${
+                  activeTab === 'financial'
+                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                onClick={() => setActiveTab('financial')}
+              >
+                Estado Financiero
+              </button>
+              <button
+                className={`${
+                  activeTab === 'documents'
+                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                onClick={() => setActiveTab('documents')}
+              >
+                Documentos
+              </button>
+            </nav>
+          </div>
+
+          <div className="py-6">
+            {activeTab === 'info' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm text-gray-500">Nombre Simbólico</p>
-                  <p>{member.symbolic_name || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Grado</p>
-                  <p>{member.degree === 1 ? 'Aprendiz' : 
-                      member.degree === 2 ? 'Compañero' : 
-                      'Maestro Masón'}</p>
-                </div>
-                {member.profile && (
-                  <>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Información de Contacto</h3>
+                  <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-gray-500">Logia Madre</p>
-                      <p>{member.profile.mother_lodge || 'N/A'}</p>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</p>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">{member.email}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Número de Registro Masónico</p>
-                      <p>{member.profile.masonic_id || 'N/A'}</p>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Teléfono</p>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">{member.phone || 'No especificado'}</p>
                     </div>
-                  </>
-                )}
-                <div>
-                  <p className="text-sm text-gray-500">Fecha de Iniciación</p>
-                  <p>{member.initiation_date ? new Date(member.initiation_date).toLocaleDateString() : 'N/A'}</p>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Dirección</p>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">{member.address || 'No especificada'}</p>
+                    </div>
+                  </div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Fecha de Elevación</p>
-                  <p>{member.passing_date ? new Date(member.passing_date).toLocaleDateString() : 'N/A'}</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Información Personal</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Fecha de Nacimiento</p>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {member.birth_date ? new Date(member.birth_date).toLocaleDateString() : 'No especificada'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Profesión</p>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">{member.profession || 'No especificada'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nacionalidad</p>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">{member.nationality || 'No especificada'}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Fecha de Exaltación</p>
-                  <p>{member.raising_date ? new Date(member.raising_date).toLocaleDateString() : 'N/A'}</p>
-                </div>
-                {member.profile && (
+              </div>
+            )}
+
+            {activeTab === 'masonic' && (
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Historial Masónico</h3>
+                <div className="space-y-6">
                   <div>
-                    <p className="text-sm text-gray-500">Última Asistencia</p>
-                    <p>{member.profile.last_attendance_date ? new Date(member.profile.last_attendance_date).toLocaleDateString() : 'N/A'}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Fecha de Iniciación</p>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {member.initiation_date ? new Date(member.initiation_date).toLocaleDateString() : 'No especificada'}
+                    </p>
                   </div>
-                )}
-              </div>
-              
-              {member.profile && member.profile.emergency_contact_name && (
-                <>
-                  <h3 className="text-lg font-medium text-gray-800 mt-6 mb-4">Contacto de Emergencia</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm text-gray-500">Nombre</p>
-                      <p>{member.profile.emergency_contact_name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Teléfono</p>
-                      <p>{member.profile.emergency_contact_phone}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Relación</p>
-                      <p>{member.profile.emergency_contact_relation}</p>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'documents' && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-800">Documentos</h3>
-              {(currentUser?.degree >= 3 || currentUser?.office === 'Secretario') && (
-                <button 
-                  onClick={handleAddDocument}
-                  className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors duration-200"
-                >
-                  <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Añadir Documento
-                </button>
-              )}
-            </div>
-            
-            {documentLoading && (
-              <div className="flex justify-center items-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-indigo-500"></div>
-              </div>
-            )}
-            
-            {member.documents && member.documents.length > 0 ? (
-              <div className="space-y-4">
-                {member.documents.map(doc => (
-                  <div key={doc.id} className="border border-gray-200 rounded-lg p-4 flex justify-between items-center">
-                    <div>
-                      <h4 className="font-medium">{doc.title}</h4>
-                      <p className="text-sm text-gray-600">{doc.document_type} · {new Date(doc.issue_date).toLocaleDateString()}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => handleViewDocument(doc.id)}
-                        className="text-indigo-600 hover:text-indigo-800 p-1"
-                        disabled={documentLoading}
-                      >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                      <button 
-                        onClick={() => handleDownloadDocument(doc.id)}
-                        className="text-gray-600 hover:text-gray-800 p-1"
-                        disabled={documentLoading}
-                      >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 italic">No hay documentos registrados para este miembro.</p>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'progress' && (
-          <div>
-            <h3 className="text-lg font-medium text-gray-800 mb-4">Progreso Masónico</h3>
-            
-            {member.progress && member.progress.length > 0 ? (
-              <div className="relative">
-                {/* Línea de tiempo vertical */}
-                <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-                
-                <div className="space-y-6 pl-12">
-                  {member.progress.map(item => (
-                    <div key={item.id} className="relative">
-                      {/* Círculo en la línea de tiempo */}
-                      <div className="absolute -left-8 mt-1.5 w-4 h-4 rounded-full bg-indigo-600 border-2 border-white"></div>
-                      
-                      <div>
-                        <h4 className="font-medium">{item.title}</h4>
-                        <p className="text-sm text-gray-500">{new Date(item.date).toLocaleDateString()}</p>
-                        <p className="mt-1 text-gray-600">{item.description}</p>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Progresión de Grados</p>
+                    <div className="mt-2">
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                          <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                        </div>
+                        <div className="relative flex justify-between">
+                          <div className="flex items-center">
+                            <span className={`h-5 w-5 rounded-full ${member.current_degree >= '1' ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'} flex items-center justify-center`}>
+                              <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">Aprendiz</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className={`h-5 w-5 rounded-full ${member.current_degree >= '2' ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'} flex items-center justify-center`}>
+                              <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">Compañero</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className={`h-5 w-5 rounded-full ${member.current_degree >= '3' ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'} flex items-center justify-center`}>
+                              <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">Maestro</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Cargos Ocupados</p>
+                    <div className="mt-2">
+                      {member.offices && member.offices.length > 0 ? (
+                        <ul className="space-y-2">
+                          {member.offices.map((office, index) => (
+                            <li key={index} className="text-sm text-gray-900 dark:text-white">
+                              {office.title} ({office.start_date} - {office.end_date || 'Presente'})
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">No hay cargos registrados</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <p className="text-gray-500 italic">No hay registros de progreso para este miembro.</p>
             )}
-          </div>
-        )}
 
-        {activeTab === 'payments' && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-800">Historial de Pagos</h3>
-              {(currentUser?.office === 'Tesorero' || currentUser?.office === 'Venerable Maestro') && (
-                <button 
-                  onClick={handleRegisterPayment}
-                  className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors duration-200"
-                >
-                  <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Registrar Pago
-                </button>
-              )}
-            </div>
-            
-            {member.payments && member.payments.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de Vencimiento</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de Pago</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {member.payments.map(payment => (
-                      <tr key={payment.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{payment.fee_name || payment.concept}</div>
-                          {payment.reference && <div className="text-sm text-gray-500">{payment.reference}</div>}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">${payment.amount.toLocaleString()}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{new Date(payment.due_date).toLocaleDateString()}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : '-'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            payment.status === 'completed' || payment.status === 'Completado' ? 'bg-green-100 text-green-800' :
-                            payment.status === 'pending' || payment.status === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                            payment.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {payment.status === 'completed' || payment.status === 'Completado' ? 'Completado' :
-                             payment.status === 'pending' || payment.status === 'Pendiente' ? 'Pendiente' :
-                             payment.status === 'overdue' ? 'Vencido' :
-                             'Cancelado'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {activeTab === 'financial' && (
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Estado Financiero</h3>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Estado de Cuotas</p>
+                      <p className={`mt-1 text-sm font-semibold ${
+                        member.dues_status === 'up_to_date' ? 'text-green-600 dark:text-green-400' : 
+                        member.dues_status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : 
+                        'text-red-600 dark:text-red-400'
+                      }`}>
+                        {member.dues_status === 'up_to_date' && 'Al día'}
+                        {member.dues_status === 'pending' && 'Pendiente'}
+                        {member.dues_status === 'overdue' && 'Atrasado'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Último Pago</p>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {member.last_payment_date ? new Date(member.last_payment_date).toLocaleDateString() : 'No registrado'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Monto Pendiente</p>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {member.pending_amount ? `$${member.pending_amount}` : '$0.00'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">Historial de Pagos</h4>
+                {member.payment_history && member.payment_history.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Fecha
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Concepto
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Monto
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Método
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {member.payment_history.map((payment, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {new Date(payment.date).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {payment.concept}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              ${payment.amount}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {payment.method}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No hay pagos registrados</p>
+                )}
               </div>
-            ) : (
-              <p className="text-gray-500 italic">No hay registros de pagos para este miembro.</p>
+            )}
+
+            {activeTab === 'documents' && (
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Documentos</h3>
+                {member.documents && member.documents.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {member.documents.map((doc, index) => (
+                      <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 dark:bg-indigo-900 rounded-md flex items-center justify-center">
+                          <svg className="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                          </svg>
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <h4 className="text-sm font-medium text-gray-900 dark:text-white">{doc.name}</h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Subido el {new Date(doc.upload_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <a 
+                          href={doc.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                        >
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                          </svg>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No hay documentos asociados</p>
+                )}
+                
+                <div className="mt-6">
+                  <button
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Subir Documento
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

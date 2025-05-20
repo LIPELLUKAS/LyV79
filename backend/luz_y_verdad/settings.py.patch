@@ -1,0 +1,19 @@
+--- settings.py.original
++++ settings.py.modified
+@@ -27,7 +27,7 @@
+ # SECURITY WARNING: don't run with debug turned on in production!
+ DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+ 
+-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
++ALLOWED_HOSTS = ['*']  # Permitir todos los hosts para desarrollo
+ 
+ # Application definition
+ 
+@@ -56,7 +56,7 @@
+     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+ ]
+ 
+-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost,http://127.0.0.1').split(',')
++CORS_ALLOW_ALL_ORIGINS = True  # Permitir CORS desde cualquier origen para desarrollo
+ 
+ ROOT_URLCONF = 'luz_y_verdad.urls'
