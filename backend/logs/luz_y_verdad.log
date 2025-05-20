@@ -1,0 +1,24 @@
+WARNING 2025-05-18 11:27:22,498 log Unauthorized: /api/members/progress/
+WARNING 2025-05-18 11:27:22,590 log Not Found: /static/rest_framework/css/bootstrap.min.css
+WARNING 2025-05-18 11:27:22,981 log Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+WARNING 2025-05-18 11:27:23,019 log Not Found: /static/rest_framework/css/prettify.css
+WARNING 2025-05-18 11:27:23,410 log Not Found: /static/rest_framework/js/ajax-form.js
+WARNING 2025-05-18 11:27:23,814 log Not Found: /static/rest_framework/js/jquery-3.5.1.min.js
+WARNING 2025-05-18 11:27:24,100 log Not Found: /static/rest_framework/css/default.css
+WARNING 2025-05-18 11:27:24,273 log Not Found: /static/rest_framework/js/csrf.js
+WARNING 2025-05-18 11:27:24,302 log Not Found: /static/rest_framework/js/bootstrap.min.js
+WARNING 2025-05-18 11:27:24,325 log Not Found: /static/rest_framework/js/prettify-min.js
+WARNING 2025-05-18 11:27:24,731 log Not Found: /static/rest_framework/js/default.js
+WARNING 2025-05-18 11:27:25,078 log Not Found: /favicon.ico
+WARNING 2025-05-18 11:27:38,987 log Unauthorized: /api/members/documents/
+WARNING 2025-05-18 11:27:39,027 log Not Found: /static/rest_framework/css/bootstrap.min.css
+WARNING 2025-05-18 11:27:39,044 log Not Found: /static/rest_framework/css/default.css
+WARNING 2025-05-18 11:27:39,057 log Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+WARNING 2025-05-18 11:27:39,497 log Not Found: /static/rest_framework/css/prettify.css
+WARNING 2025-05-18 11:27:39,548 log Not Found: /static/rest_framework/js/ajax-form.js
+WARNING 2025-05-18 11:27:39,578 log Not Found: /static/rest_framework/js/jquery-3.5.1.min.js
+WARNING 2025-05-18 11:27:39,599 log Not Found: /static/rest_framework/js/csrf.js
+WARNING 2025-05-18 11:27:40,002 log Not Found: /static/rest_framework/js/bootstrap.min.js
+WARNING 2025-05-18 11:27:40,031 log Not Found: /static/rest_framework/js/prettify-min.js
+WARNING 2025-05-18 11:27:40,384 log Not Found: /static/rest_framework/js/default.js
+WARNING 2025-05-18 12:07:11,914 log Unauthorized: /api/members/documents/

@@ -1,7 +1,6 @@
 // Crear un directorio para almacenar el logo
 'use client'
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
 
 export default function LogoComponent({ size = 'medium', className = '' }) {
   const [logoPath, setLogoPath] = useState('/logo-placeholder.png')

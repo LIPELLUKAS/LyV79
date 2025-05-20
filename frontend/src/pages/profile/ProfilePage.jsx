@@ -8,7 +8,7 @@ const ProfilePage = () => {
   const profileData = {
     name: user?.name || 'Usuario',
     role: user?.role || 'Miembro',
-    lodge: user?.lodge || 'Luz y Verdad #79',
+    lodge: user?.lodge || 'Luz y Verdad n 79',
     grade: 'Maestro Masón',
     initiation: '15/03/2015',
     email: 'usuario@ejemplo.com',

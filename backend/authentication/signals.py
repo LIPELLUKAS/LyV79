@@ -11,39 +11,36 @@ def assign_user_permissions(sender, instance, created, **kwargs):
     """
     Asigna permisos basados en el grado masónico y el cargo oficial del usuario.
     """
+    from django.contrib.auth.models import Permission
+    
+    def safe_assign_perm(perm_code, user):
+        try:
+            if '.' in perm_code:
+                app_label, codename = perm_code.split('.')
+                perm = Permission.objects.filter(
+                    content_type__app_label=app_label,
+                    codename=codename
+                ).first()
+                
+                if perm:
+                    assign_perm(perm_code, user)
+                else:
+                    print(f"Permiso {perm_code} no encontrado")
+            else:
+                print(f"Formato de permiso incorrecto: {perm_code}")
+        except Exception as e:
+            print(f"Error al asignar permiso {perm_code}: {str(e)}")
+    
     if created:
         # Asignar permisos básicos para todos los usuarios
         basic_permissions = [
-            'view_memberprofile',
-            'view_event',
-            'view_notification',
+            'members.view_memberprofile',
+            'rituals.view_event',
+            'communications.view_notification',
         ]
         
         for perm in basic_permissions:
-            assign_perm(perm, instance)
-    
-    # Asignar permisos basados en el grado
-    if instance.degree >= MasonicUser.APPRENTICE:
-        apprentice_permissions = [
-            'view_document',
-        ]
-        for perm in apprentice_permissions:
-            assign_perm(perm, instance)
-    
-    if instance.degree >= MasonicUser.FELLOW_CRAFT:
-        fellow_permissions = [
-            'add_document',
-        ]
-        for perm in fellow_permissions:
-            assign_perm(perm, instance)
-    
-    if instance.degree >= MasonicUser.MASTER:
-        master_permissions = [
-            'view_ritualplan',
-            'view_payment',
-        ]
-        for perm in master_permissions:
-            assign_perm(perm, instance)
+            safe_assign_perm(perm, instance)
 
 @receiver(post_save, sender=OfficerRole)
 def assign_officer_permissions(sender, instance, created, **kwargs):
