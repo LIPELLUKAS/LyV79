@@ -20,4 +20,17 @@ export default defineConfig({
       '@assets': path.resolve(__dirname, './src/assets'),
     },
   },
+  // Configuração para garantir que o roteamento SPA funcione corretamente
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    // Garante que o index.html seja copiado para a raiz do diretório de saída
+    emptyOutDir: true,
+    // Configuração para lidar com rotas SPA
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
+  }
 })
