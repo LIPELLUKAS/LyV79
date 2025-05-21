@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { communicationsService } from '../../services/api';
+import { communicationService } from '../../services/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -62,7 +62,7 @@ const MessagingCenter = () => {
       // Construir parámetros de consulta
       const queryParams = { filter };
       
-      const response = await communicationsService.getConversations(queryParams);
+      const response = await communicationService.getConversations(queryParams);
       setConversations(response.data.results || []);
       
       // Si no hay conversación seleccionada y hay conversaciones, seleccionar la primera
@@ -86,12 +86,12 @@ const MessagingCenter = () => {
     }
     
     try {
-      const response = await communicationsService.getMessages(conversationId);
+      const response = await communicationService.getMessages(conversationId);
       setMessages(response.data.results || []);
       
       // Marcar conversación como leída
       if (selectedConversation && selectedConversation.unread_count > 0) {
-        await communicationsService.markConversationAsRead(conversationId);
+        await communicationService.markConversationAsRead(conversationId);
         
         // Actualizar el contador de no leídos en la lista de conversaciones
         setConversations(prevConversations => 
@@ -125,7 +125,7 @@ const MessagingCenter = () => {
     setSendingMessage(true);
     
     try {
-      const response = await communicationsService.sendMessage({
+      const response = await communicationService.sendMessage({
         conversation_id: selectedConversation.id,
         content: newMessage,
         attachments: [] // Implementar adjuntos en el futuro

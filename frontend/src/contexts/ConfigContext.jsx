@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios'; // Certifique-se de ter o axios instalado ou utilize fetch se preferir
+import { publicApi, configService } from '../services/api';
 
 const ConfigContext = createContext();
 
@@ -8,7 +8,6 @@ export const useConfig = () => {
 };
 
 export const ConfigProvider = ({ children }) => {
-  // Removemos la dependencia directa de useNotification
   const [config, setConfig] = useState({
     lodgeName: 'Logia Luz y Verdad',
     lodgeNumber: '79',
@@ -21,41 +20,39 @@ export const ConfigProvider = ({ children }) => {
     isLoaded: false
   });
 
-  // Cargar configuração desde o backend
+  // Cargar configuração desde o backend usando o serviço público
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        // Corrigimos a URL para apontar para o endpoint correto da API
-        const response = await axios.get('http://localhost:8000/api/core/configuration/');
+        // Usamos o serviço de configuração público que não requer autenticação
+        const response = await configService.getConfig();
         setConfig(prevConfig => ({
           ...prevConfig,
           isLoaded: true,
-          ...response.data // Assume que a resposta da API contém os dados necessários
+          ...response.data
         }));
       } catch (error) {
         console.error('Erro ao carregar a configuração:', error);
-        // Reemplazamos la llamada a showNotification por un console.error
         console.error('Erro ao carregar a configuração do sistema');
       }
     };
-
     fetchConfig();
   }, []);
 
   // Atualizar configuração no backend
   const updateConfig = async (newConfig) => {
     try {
-      // Corregimos también la URL para actualizar la configuración
-      const response = await axios.put("http://localhost:8000/api/core/configuration/", newConfig);
+      // Usamos o serviço de configuração que requer autenticação para atualizações
+      const response = await configService.updateConfig(newConfig);
       setConfig({ ...newConfig, isLoaded: true });
-
+      
       // Guardar preferências no localStorage
       if (newConfig.language) localStorage.setItem('language', newConfig.language);
       if (newConfig.theme) localStorage.setItem('theme', newConfig.theme);
       if (newConfig.dateFormat) localStorage.setItem('dateFormat', newConfig.dateFormat);
       if (newConfig.timeFormat) localStorage.setItem('timeFormat', newConfig.timeFormat);
       if (newConfig.currency) localStorage.setItem('currency', newConfig.currency);
-
+      
       console.log('Configuração atualizada com sucesso');
       return true;
     } catch (error) {

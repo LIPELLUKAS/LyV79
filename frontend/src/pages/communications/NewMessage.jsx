@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { communicationsService } from '../../services/api';
+import { communicationService } from '../../services/api';
 
 const NewMessage = () => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ const NewMessage = () => {
   useEffect(() => {
     const fetchRecipients = async () => {
       try {
-        const response = await communicationsService.getAvailableRecipients();
+        const response = await communicationService.getAvailableRecipients();
         setAvailableRecipients(response.data || []);
       } catch (error) {
         console.error('Error al cargar destinatarios:', error);
@@ -126,7 +126,7 @@ const NewMessage = () => {
       });
       
       // Enviar mensaje
-      const response = await communicationsService.createMessage(messageData);
+      const response = await communicationService.createMessage(messageData);
       
       showNotification('Mensaje enviado correctamente', 'success');
       navigate('/communications/messages');

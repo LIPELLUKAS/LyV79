@@ -1,7 +1,15 @@
 import axios from 'axios';
 import { getToken, refreshToken } from './tokenService';
 
-// Crear instancia de axios con configuración base
+// Criar instância pública de axios para endpoints que não requerem autenticação
+export const publicApi = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Criar instância de axios com configuração base
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
   headers: {
@@ -56,16 +64,25 @@ api.interceptors.response.use(
   }
 );
 
+// Servicios para configuración del sistema (accesibles sin autenticación)
+export const configService = {
+  getConfig: () => publicApi.get('/core/configuration/'),
+  updateConfig: (data) => api.put('/core/configuration/', data),
+};
+
 // Servicios para autenticación
 export const authService = {
-  login: (credentials) => api.post('/auth/login/', credentials),
-  register: (userData) => api.post('/auth/register/', userData),
-  logout: () => api.post('/auth/logout/'),
-  forgotPassword: (email) => api.post('/auth/password-reset/', { email }),
-  resetPassword: (data) => api.post('/auth/password-reset/confirm/', data),
-  verifyToken: (token) => api.post('/auth/token/verify/', { token }),
-  getCurrentUser: () => api.get('/auth/user/'),
-  updateProfile: (userData) => api.put('/auth/user/', userData),
+  login: (credentials) => api.post('/authentication/token/', credentials),
+  refreshToken: (refreshToken) => api.post('/authentication/token/refresh/', { refresh: refreshToken }),
+  register: (userData) => api.post('/authentication/users/', userData),
+  getProfile: () => api.get('/authentication/users/me/'),
+  updateProfile: (data) => api.put('/authentication/users/me/', data),
+  changePassword: (data) => api.post('/authentication/users/change-password/', data),
+  resetPassword: (email) => api.post('/authentication/password-reset/', { email }),
+  confirmResetPassword: (data) => api.post('/authentication/password-reset/confirm/', data),
+  setup2FA: () => api.get('/authentication/two-factor/setup/'),
+  verify2FA: (code) => api.post('/authentication/two-factor/verify/', { code }),
+  disable2FA: () => api.post('/authentication/two-factor/disable/'),
 };
 
 // Servicios para miembros
@@ -77,21 +94,18 @@ export const memberService = {
   deleteMember: (id) => api.delete(`/members/${id}/`),
   getMemberDegrees: () => api.get('/members/degrees/'),
   getMemberOffices: () => api.get('/members/offices/'),
+  assignOffice: (memberId, data) => api.post(`/members/${memberId}/assign-office/`, data),
+  removeOffice: (memberId, officeId) => api.delete(`/members/${memberId}/remove-office/${officeId}/`),
+  changeDegree: (memberId, data) => api.post(`/members/${memberId}/change-degree/`, data),
+  getMemberAttendance: (memberId, params) => api.get(`/members/${memberId}/attendance/`, { params }),
+  getMemberPayments: (memberId, params) => api.get(`/members/${memberId}/payments/`, { params }),
 };
 
 // Servicios para tesorería
 export const treasuryService = {
-  // Transacciones (ingresos y gastos)
-  getTransactions: (params) => api.get('/treasury/transactions/', { params }),
-  getTransaction: (id) => api.get(`/treasury/transactions/${id}/`),
-  createTransaction: (data) => api.post('/treasury/transactions/', data),
-  updateTransaction: (id, data) => api.put(`/treasury/transactions/${id}/`, data),
-  deleteTransaction: (id) => api.delete(`/treasury/transactions/${id}/`),
-  downloadReceipt: (id) => api.get(`/treasury/transactions/${id}/receipt/`, { responseType: 'blob' }),
-  
-  // Categorías de transacciones
-  getTransactionCategories: (type) => api.get(`/treasury/categories/?type=${type}`),
-  getAllTransactionCategories: () => api.get('/treasury/categories/'),
+  // Categorías
+  getCategories: () => api.get('/treasury/categories/'),
+  getCategory: (id) => api.get(`/treasury/categories/${id}/`),
   createCategory: (data) => api.post('/treasury/categories/', data),
   updateCategory: (id, data) => api.put(`/treasury/categories/${id}/`, data),
   deleteCategory: (id) => api.delete(`/treasury/categories/${id}/`),

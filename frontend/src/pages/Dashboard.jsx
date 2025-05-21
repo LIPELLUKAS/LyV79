@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfig } from '../contexts/ConfigContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { adminService, memberService, treasuryService, communicationsService } from '../services/api';
+import { adminService, memberService, treasuryService, communicationService } from '../services/api';
 
 const Dashboard = () => {
   const { currentUser } = useAuth();
@@ -37,7 +37,7 @@ const Dashboard = () => {
         const pendingPayments = paymentsResponse.data.count || 0;
         
         // Obtener próximos eventos
-        const eventsResponse = await communicationsService.getAllEvents({ 
+        const eventsResponse = await communicationService.getAllEvents({ 
           upcoming: true,
           limit: 5
         });
