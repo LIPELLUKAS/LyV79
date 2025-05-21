@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ritualsService } from '../../services/api';
+import { ritualService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 
@@ -40,7 +40,7 @@ const RitualsList = () => {
           limit: pagination.itemsPerPage
         };
         
-        const ritualsResponse = await ritualsService.getRituals(params);
+        const ritualsResponse = await ritualService.getRituals(params);
         setRituals(ritualsResponse.data.results || []);
         setFilteredRituals(ritualsResponse.data.results || []);
         
@@ -79,7 +79,7 @@ const RitualsList = () => {
         };
         
         // Filtrar desde el servidor
-        const response = await ritualsService.getRituals(params);
+        const response = await ritualService.getRituals(params);
         
         setFilteredRituals(response.data.results || []);
         
@@ -168,7 +168,7 @@ const RitualsList = () => {
   const handleDeleteRitual = async (ritualId) => {
     if (window.confirm('¿Está seguro de que desea eliminar este ritual? Esta acción no se puede deshacer.')) {
       try {
-        await ritualsService.deleteRitual(ritualId);
+        await ritualService.deleteRitual(ritualId);
         
         // Actualizar lista de rituales
         setRituals(rituals.filter(ritual => ritual.id !== ritualId));
