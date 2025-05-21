@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ritualsService } from '../../services/api';
+import { ritualService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 
@@ -46,12 +46,12 @@ const RitualForm = () => {
     const fetchInitialData = async () => {
       try {
         // Cargar lista de miembros
-        const membersResponse = await ritualsService.getMembersList();
+        const membersResponse = await ritualService.getMembersList();
         setMembers(membersResponse.data || []);
         
         // Si estamos editando, cargar datos del ritual
         if (isEditing) {
-          const ritualResponse = await ritualsService.getRitual(id);
+          const ritualResponse = await ritualService.getRitual(id);
           const ritual = ritualResponse.data;
           
           // Formatear fecha
@@ -143,10 +143,10 @@ const RitualForm = () => {
       let response;
       
       if (isEditing) {
-        response = await ritualsService.updateRitual(id, formData);
+        response = await ritualService.updateRitual(id, formData);
         showNotification('Ritual actualizado correctamente', 'success');
       } else {
-        response = await ritualsService.createRitual(formData);
+        response = await ritualService.createRitual(formData);
         showNotification('Ritual creado correctamente', 'success');
       }
       
