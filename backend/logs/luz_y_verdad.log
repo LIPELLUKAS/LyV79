@@ -22,3 +22,5 @@ WARNING 2025-05-18 11:27:40,002 log Not Found: /static/rest_framework/js/bootstr
 WARNING 2025-05-18 11:27:40,031 log Not Found: /static/rest_framework/js/prettify-min.js
 WARNING 2025-05-18 11:27:40,384 log Not Found: /static/rest_framework/js/default.js
 WARNING 2025-05-18 12:07:11,914 log Unauthorized: /api/members/documents/
+WARNING 2025-05-21 02:17:38,835 log Not Found: /login
+WARNING 2025-05-21 02:41:41,278 log Not Found: /api/authentication/users/me/
