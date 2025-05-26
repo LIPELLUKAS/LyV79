@@ -1,157 +1,163 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import { useAuth } from '../../contexts/AuthContext';
+import logo from '../../assets/logo.svg';
+import heroImage from '../../assets/hero-image.svg';
 
 const HomePage = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
-      {/* Header/Navbar */}
-      <header className="bg-white shadow-sm">
-        <div className="container-custom py-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <img 
-              src="/src/assets/logo.svg" 
-              alt="Luz y Verdad 79" 
-              className="h-10 w-auto mr-3"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = 'https://via.placeholder.com/40x40?text=LyV';
-              }}
-            />
-            <h1 className="text-xl font-bold text-primary-800">Luz y Verdad 79</h1>
-          </div>
-          <Link 
-            to="/login" 
-            className="btn btn-primary flex items-center"
-          >
-            Entrar
-            <ArrowRightIcon className="ml-2 h-4 w-4" />
-          </Link>
-        </div>
-      </header>
+  const { isAuthenticated } = useAuth();
 
+  return (
+    <div className="bg-gradient-to-b from-gray-50 to-white min-h-screen">
       {/* Hero Section */}
-      <section className="section animate-fade-in">
-        <div className="container-custom">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="animate-slide-in">
-              <h2 className="text-4xl md:text-5xl font-bold text-primary-900 mb-6">
-                Sistema de Gestão Integrado
-              </h2>
-              <p className="text-lg text-gray-700 mb-8">
-                Bem-vindo ao sistema de gestão Luz y Verdad 79. Uma plataforma completa para gerenciamento 
-                de secretaria, tesouraria e muito mais.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/login" className="btn btn-primary text-center">
-                  Acessar Sistema
-                </Link>
-                <a href="#recursos" className="btn btn-outline text-center">
-                  Conhecer Recursos
-                </a>
+      <div className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative z-10 pb-8 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
+            <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
+              <div className="sm:text-center lg:text-left">
+                <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+                  <span className="block xl:inline">Luz y Verdad</span>{' '}
+                  <span className="block text-primary-600 xl:inline">Sistema de Gestão</span>
+                </h1>
+                <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                  Plataforma completa para gerenciamento de membros, tesouraria e comunicações da Loja Maçônica Luz y Verdad.
+                </p>
+                <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+                  {isAuthenticated ? (
+                    <Button 
+                      to="/dashboard" 
+                      variant="primary" 
+                      size="lg"
+                      className="w-full sm:w-auto"
+                    >
+                      Acessar Dashboard
+                    </Button>
+                  ) : (
+                    <Button 
+                      to="/login" 
+                      variant="primary" 
+                      size="lg"
+                      className="w-full sm:w-auto"
+                    >
+                      Acessar o Sistema
+                    </Button>
+                  )}
+                  <Button 
+                    to="/" 
+                    variant="outline" 
+                    size="lg"
+                    className="mt-3 w-full sm:mt-0 sm:ml-3 sm:w-auto"
+                  >
+                    Saiba Mais
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="hidden lg:block">
-              <img 
-                src="/src/assets/hero-image.svg" 
-                alt="Sistema de Gestão" 
-                className="w-full h-auto rounded-lg shadow-lg"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = 'https://via.placeholder.com/600x400?text=Sistema+de+Gestão';
-                }}
-              />
-            </div>
+            </main>
           </div>
         </div>
-      </section>
+        <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
+          <img
+            className="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full"
+            src={heroImage}
+            alt="Dashboard do sistema"
+          />
+        </div>
+      </div>
 
       {/* Features Section */}
-      <section id="recursos" className="section bg-white">
-        <div className="container-custom">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-primary-900 mb-4">Recursos do Sistema</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Nossa plataforma oferece ferramentas completas para gestão eficiente e organizada.
+      <div className="py-12 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="lg:text-center">
+            <h2 className="text-base text-primary-600 font-semibold tracking-wide uppercase">Funcionalidades</h2>
+            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+              Tudo o que você precisa em um só lugar
+            </p>
+            <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
+              Gerencie todos os aspectos da sua loja com facilidade e segurança.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="card p-6 hover:shadow-lg transition-shadow duration-300">
-              <div className="bg-primary-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Gestão de Secretaria</h3>
-              <p className="text-gray-600">
-                Controle completo de membros, documentos, comunicações e registros de presença.
-              </p>
-            </div>
+          <div className="mt-10">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              <Card 
+                title="Secretaria" 
+                icon={
+                  <div className="flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </div>
+                }
+                hover
+                onClick={() => isAuthenticated && window.location.href = '/secretaria'}
+              >
+                <p className="text-gray-500">
+                  Gerencie o cadastro de membros, registre presenças e organize documentos importantes.
+                </p>
+              </Card>
 
-            {/* Feature 2 */}
-            <div className="card p-6 hover:shadow-lg transition-shadow duration-300">
-              <div className="bg-primary-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Gestão de Tesouraria</h3>
-              <p className="text-gray-600">
-                Controle financeiro, pagamentos, recebimentos e relatórios detalhados.
-              </p>
-            </div>
+              <Card 
+                title="Tesouraria" 
+                icon={
+                  <div className="flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                }
+                hover
+                onClick={() => isAuthenticated && window.location.href = '/tesouraria'}
+              >
+                <p className="text-gray-500">
+                  Controle financeiro completo, com registro de pagamentos, despesas e geração de relatórios.
+                </p>
+              </Card>
 
-            {/* Feature 3 */}
-            <div className="card p-6 hover:shadow-lg transition-shadow duration-300">
-              <div className="bg-primary-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Dashboard Intuitivo</h3>
-              <p className="text-gray-600">
-                Visualização rápida de informações importantes e indicadores de desempenho.
-              </p>
+              <Card 
+                title="Comunicações" 
+                icon={
+                  <div className="flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                  </div>
+                }
+                hover
+                onClick={() => isAuthenticated && window.location.href = '/comunicacoes'}
+              >
+                <p className="text-gray-500">
+                  Envie mensagens, notificações e mantenha todos os membros informados sobre eventos e atividades.
+                </p>
+              </Card>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="section bg-primary-900 text-white">
-        <div className="container-custom text-center">
-          <h2 className="text-3xl font-bold mb-6">Pronto para começar?</h2>
-          <p className="text-lg mb-8 max-w-2xl mx-auto">
-            Acesse agora mesmo o sistema e aproveite todos os recursos disponíveis para uma gestão eficiente.
-          </p>
-          <Link to="/login" className="btn bg-white text-primary-900 hover:bg-gray-100 px-8 py-3 text-lg font-medium">
-            Acessar Sistema
-          </Link>
-        </div>
-      </section>
+      </div>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-8">
-        <div className="container-custom">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">Luz y Verdad 79</h3>
-              <p className="text-gray-300">
-                Sistema de gestão integrado para administração eficiente.
-              </p>
+      <footer className="bg-gray-800">
+        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <img className="h-10 w-auto" src={logo} alt="Luz y Verdad" />
+              <p className="ml-3 text-white text-sm">© {new Date().getFullYear()} Luz y Verdad. Todos os direitos reservados.</p>
             </div>
-            <div className="md:text-right">
-              <h3 className="text-xl font-bold mb-4">Contato</h3>
-              <p className="text-gray-300">
-                Email: contato@luzyverda79.org<br />
-                Telefone: (00) 1234-5678
-              </p>
+            <div className="flex space-x-6">
+              <a href="#" className="text-gray-400 hover:text-white">
+                <span className="sr-only">Política de Privacidade</span>
+                Privacidade
+              </a>
+              <a href="#" className="text-gray-400 hover:text-white">
+                <span className="sr-only">Termos de Uso</span>
+                Termos
+              </a>
+              <a href="#" className="text-gray-400 hover:text-white">
+                <span className="sr-only">Contato</span>
+                Contato
+              </a>
             </div>
-          </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; {new Date().getFullYear()} Luz y Verdad 79. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>

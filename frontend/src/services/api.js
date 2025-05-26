@@ -21,7 +21,7 @@ api.interceptors.request.use(
   async (config) => {
     const token = localStorage.getItem('token');
     if (token) {
-      config.headers.Authorization = `Token ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -52,7 +52,7 @@ api.interceptors.response.use(
         localStorage.setItem('refresh_token', response.data.refresh);
         
         // Atualizar o token na requisição original
-        originalRequest.headers.Authorization = `Token ${response.data.access}`;
+        originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
         
         // Tentar novamente a requisição original
         return api(originalRequest);

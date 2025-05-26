@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
           
           // Obter perfil do usuário
           const response = await axios.get('/api/authentication/users/me/', {
-            headers: { Authorization: `Token ${token}` }
+            headers: { Authorization: `Bearer ${token}` }
           });
           
           setCurrentUser(response.data);
@@ -151,6 +151,11 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post('/api/authentication/token/refresh/', {
         refresh
       });
+      
+      // Verificar se a resposta contém os tokens esperados
+      if (!response.data.access) {
+        throw new Error('Formato de resposta inválido');
+      }
       
       const { access, refresh: newRefresh } = response.data;
       
