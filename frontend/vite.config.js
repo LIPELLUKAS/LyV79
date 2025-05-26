@@ -1,36 +1,36 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@components': path.resolve(__dirname, './src/components'),
-      '@pages': path.resolve(__dirname, './src/pages'),
       '@contexts': path.resolve(__dirname, './src/contexts'),
-      '@hooks': path.resolve(__dirname, './src/hooks'),
+      '@pages': path.resolve(__dirname, './src/pages'),
       '@services': path.resolve(__dirname, './src/services'),
+      '@styles': path.resolve(__dirname, './src/styles'),
       '@assets': path.resolve(__dirname, './src/assets'),
+      '@hooks': path.resolve(__dirname, './src/hooks'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+      '@layouts': path.resolve(__dirname, './src/layouts'),
     },
   },
-  // Configuração para garantir que o roteamento SPA funcione corretamente
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    // Garante que o index.html seja copiado para a raiz do diretório de saída
-    emptyOutDir: true,
-    // Configuração para lidar com rotas SPA
-    rollupOptions: {
-      output: {
-        manualChunks: undefined
+  server: {
+    port: 3000,
+    host: '0.0.0.0',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
       }
     }
-  }
-})
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+  },
+});

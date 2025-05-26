@@ -1,37 +1,56 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/api';
+import { useNotification } from './NotificationContext';
+import { jwtDecode } from 'jwt-decode';
 
+// Criando o contexto de autenticação
 const AuthContext = createContext();
 
+// Hook personalizado para usar o contexto
 export const useAuth = () => useContext(AuthContext);
 
+// Provider do contexto
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [authError, setAuthError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
   const [tempUserId, setTempUserId] = useState(null);
+  
   const navigate = useNavigate();
+  const { showSuccess, showError } = useNotification();
 
-  // Verificar si hay un token almacenado al cargar la aplicación
+  // Verificar se há um token válido ao carregar a aplicação
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          // Obtener perfil del usuario
-          const response = await authService.getProfile();
+          // Verificar se o token expirou
+          const decodedToken = jwtDecode(token);
+          const currentTime = Date.now() / 1000;
+          
+          if (decodedToken.exp < currentTime) {
+            // Token expirado, tentar refresh
+            const refreshed = await refreshToken();
+            if (!refreshed) {
+              throw new Error('Sessão expirada');
+            }
+          }
+          
+          // Obter perfil do usuário
+          const response = await axios.get('/api/authentication/users/me/', {
+            headers: { Authorization: `Token ${token}` }
+          });
+          
           setCurrentUser(response.data);
           setIsAuthenticated(true);
         }
       } catch (error) {
-        console.error('Error al verificar autenticación:', error);
-        // Si hay error, limpiar token
-        localStorage.removeItem('token');
-        setIsAuthenticated(false);
-        setCurrentUser(null);
+        console.error('Erro ao verificar autenticação:', error);
+        // Limpar dados de autenticação
+        logout();
       } finally {
         setLoading(false);
       }
@@ -40,61 +59,59 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  // Función para iniciar sesión
-  const login = async (credentials, rememberMe = false) => {
-    setAuthError(null);
+  // Função para fazer login
+  const login = async (username, password) => {
     try {
-      const response = await authService.login(credentials);
+      setLoading(true);
+      const response = await axios.post('/api/authentication/token/', { username, password });
       
-      // Si requiere 2FA
+      // Se requer 2FA
       if (response.data.requires_2fa) {
         setRequires2FA(true);
         setTempUserId(response.data.user_id);
-        return { requires2FA: true, userId: response.data.user_id };
+        return { requires_2fa: true, user_id: response.data.user_id };
       }
       
-      // Si no requiere 2FA, guardar token y datos de usuario
+      // Se não requer 2FA, guardar token e dados do usuário
       const { token, refresh_token, user } = response.data;
       
       // Guardar tokens
       localStorage.setItem('token', token);
-      if (rememberMe) {
-        localStorage.setItem('refresh_token', refresh_token);
-      } else {
-        sessionStorage.setItem('refresh_token', refresh_token);
-      }
+      localStorage.setItem('refresh_token', refresh_token);
       
       setCurrentUser(user);
       setIsAuthenticated(true);
+      showSuccess('Login realizado com sucesso!');
+      
       return { success: true };
     } catch (error) {
-      console.error('Error de inicio de sesión:', error);
+      console.error('Erro de login:', error);
       
-      let errorMessage = 'Error al iniciar sesión. Por favor, intente nuevamente.';
+      let errorMessage = 'Erro ao fazer login. Por favor, tente novamente.';
       
       if (error.response) {
-        // Error específico del servidor
-        if (error.response.data && error.response.data.detail) {
+        if (error.response.status === 401) {
+          errorMessage = 'Credenciais inválidas. Verifique seu nome de usuário e senha.';
+        } else if (error.response.data && error.response.data.detail) {
           errorMessage = error.response.data.detail;
-        } else if (error.response.data && error.response.data.non_field_errors) {
-          errorMessage = error.response.data.non_field_errors[0];
-        } else if (error.response.status === 401) {
-          errorMessage = 'Credenciales inválidas. Por favor, verifique su nombre de usuario y contraseña.';
-        } else if (error.response.status === 403) {
-          errorMessage = 'Su cuenta está desactivada. Por favor, contacte al administrador.';
         }
       }
       
-      setAuthError(errorMessage);
+      showError(errorMessage);
       return { error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Función para verificar código 2FA
+  // Função para verificar código 2FA
   const verify2FA = async (code) => {
-    setAuthError(null);
     try {
-      const response = await authService.verify2FA(code, tempUserId);
+      setLoading(true);
+      const response = await axios.post('/api/authentication/two-factor/verify/', {
+        code,
+        user_id: tempUserId
+      });
       
       const { token, refresh_token, user } = response.data;
       
@@ -107,239 +124,134 @@ export const AuthProvider = ({ children }) => {
       setRequires2FA(false);
       setTempUserId(null);
       
+      showSuccess('Verificação de dois fatores concluída com sucesso!');
       return { success: true };
     } catch (error) {
-      console.error('Error al verificar 2FA:', error);
+      console.error('Erro ao verificar 2FA:', error);
       
-      let errorMessage = 'Código inválido. Por favor, intente nuevamente.';
+      let errorMessage = 'Código inválido. Por favor, tente novamente.';
       
       if (error.response && error.response.data && error.response.data.detail) {
         errorMessage = error.response.data.detail;
       }
       
-      setAuthError(errorMessage);
+      showError(errorMessage);
       return { error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Función para cerrar sesión
+  // Função para atualizar token
+  const refreshToken = async () => {
+    try {
+      const refresh = localStorage.getItem('refresh_token');
+      if (!refresh) return false;
+      
+      const response = await axios.post('/api/authentication/token/refresh/', {
+        refresh
+      });
+      
+      const { access, refresh: newRefresh } = response.data;
+      
+      localStorage.setItem('token', access);
+      localStorage.setItem('refresh_token', newRefresh);
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar token:', error);
+      logout();
+      return false;
+    }
+  };
+
+  // Função para fazer logout
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
-    sessionStorage.removeItem('refresh_token');
     setCurrentUser(null);
     setIsAuthenticated(false);
-    navigate('/login');
+    navigate('/');
   };
 
-  // Función para registrar un nuevo usuario
+  // Função para registrar novo usuário
   const register = async (userData) => {
-    setAuthError(null);
     try {
-      await authService.register(userData);
+      setLoading(true);
+      await axios.post('/api/authentication/users/', userData);
+      showSuccess('Registro realizado com sucesso! Faça login para continuar.');
       return { success: true };
     } catch (error) {
-      console.error('Error al registrar usuario:', error);
+      console.error('Erro ao registrar:', error);
       
-      let errorMessage = 'Error al registrar usuario. Por favor, intente nuevamente.';
+      let errorMessage = 'Erro ao registrar. Por favor, tente novamente.';
       
       if (error.response && error.response.data) {
-        // Procesar errores específicos
+        // Processar erros específicos
         const errors = error.response.data;
         if (errors.username) {
-          errorMessage = `Error en nombre de usuario: ${errors.username.join(', ')}`;
+          errorMessage = `Erro no nome de usuário: ${errors.username.join(', ')}`;
         } else if (errors.email) {
-          errorMessage = `Error en correo electrónico: ${errors.email.join(', ')}`;
+          errorMessage = `Erro no email: ${errors.email.join(', ')}`;
         } else if (errors.password) {
-          errorMessage = `Error en contraseña: ${errors.password.join(', ')}`;
-        } else if (errors.non_field_errors) {
-          errorMessage = errors.non_field_errors.join(', ');
+          errorMessage = `Erro na senha: ${errors.password.join(', ')}`;
         }
       }
       
-      setAuthError(errorMessage);
+      showError(errorMessage);
       return { error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Función para solicitar restablecimiento de contraseña
+  // Função para solicitar redefinição de senha
   const resetPassword = async (email) => {
-    setAuthError(null);
     try {
-      await authService.resetPassword(email);
+      setLoading(true);
+      await axios.post('/api/authentication/password-reset/', { email });
+      showSuccess('Instruções para redefinição de senha foram enviadas para seu email.');
       return { success: true };
     } catch (error) {
-      console.error('Error al solicitar restablecimiento de contraseña:', error);
-      
-      let errorMessage = 'Error al solicitar restablecimiento de contraseña. Por favor, intente nuevamente.';
-      
-      if (error.response && error.response.data && error.response.data.detail) {
-        errorMessage = error.response.data.detail;
-      }
-      
-      setAuthError(errorMessage);
-      return { error: errorMessage };
+      console.error('Erro ao solicitar redefinição de senha:', error);
+      showError('Não foi possível enviar o email de redefinição de senha.');
+      return { error: 'Não foi possível enviar o email de redefinição de senha.' };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Función para confirmar restablecimiento de contraseña
-  const confirmResetPassword = async (data) => {
-    setAuthError(null);
-    try {
-      await authService.confirmResetPassword(data);
-      return { success: true };
-    } catch (error) {
-      console.error('Error al confirmar restablecimiento de contraseña:', error);
-      
-      let errorMessage = 'Error al confirmar restablecimiento de contraseña. Por favor, intente nuevamente.';
-      
-      if (error.response && error.response.data) {
-        if (error.response.data.token) {
-          errorMessage = 'El enlace de restablecimiento es inválido o ha expirado.';
-        } else if (error.response.data.password) {
-          errorMessage = `Error en contraseña: ${error.response.data.password.join(', ')}`;
-        } else if (error.response.data.detail) {
-          errorMessage = error.response.data.detail;
-        }
-      }
-      
-      setAuthError(errorMessage);
-      return { error: errorMessage };
-    }
-  };
-
-  // Función para cambiar contraseña
-  const changePassword = async (data) => {
-    setAuthError(null);
-    try {
-      await authService.changePassword(data);
-      return { success: true };
-    } catch (error) {
-      console.error('Error al cambiar contraseña:', error);
-      
-      let errorMessage = 'Error al cambiar contraseña. Por favor, intente nuevamente.';
-      
-      if (error.response && error.response.data) {
-        if (error.response.data.old_password) {
-          errorMessage = 'La contraseña actual es incorrecta.';
-        } else if (error.response.data.new_password) {
-          errorMessage = `Error en nueva contraseña: ${error.response.data.new_password.join(', ')}`;
-        } else if (error.response.data.detail) {
-          errorMessage = error.response.data.detail;
-        }
-      }
-      
-      setAuthError(errorMessage);
-      return { error: errorMessage };
-    }
-  };
-
-  // Función para actualizar perfil
-  const updateProfile = async (data) => {
-    setAuthError(null);
-    try {
-      const response = await authService.updateProfile(data);
-      setCurrentUser(response.data);
-      return { success: true };
-    } catch (error) {
-      console.error('Error al actualizar perfil:', error);
-      
-      let errorMessage = 'Error al actualizar perfil. Por favor, intente nuevamente.';
-      
-      if (error.response && error.response.data && error.response.data.detail) {
-        errorMessage = error.response.data.detail;
-      }
-      
-      setAuthError(errorMessage);
-      return { error: errorMessage };
-    }
-  };
-
-  // Función para configurar 2FA
-  const setup2FA = async () => {
-    setAuthError(null);
-    try {
-      const response = await authService.setup2FA();
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error('Error al configurar 2FA:', error);
-      
-      let errorMessage = 'Error al configurar autenticación de dos factores. Por favor, intente nuevamente.';
-      
-      if (error.response && error.response.data && error.response.data.detail) {
-        errorMessage = error.response.data.detail;
-      }
-      
-      setAuthError(errorMessage);
-      return { error: errorMessage };
-    }
-  };
-
-  // Función para desactivar 2FA
-  const disable2FA = async () => {
-    setAuthError(null);
-    try {
-      await authService.disable2FA();
-      
-      // Actualizar perfil de usuario
-      const response = await authService.getProfile();
-      setCurrentUser(response.data);
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Error al desactivar 2FA:', error);
-      
-      let errorMessage = 'Error al desactivar autenticación de dos factores. Por favor, intente nuevamente.';
-      
-      if (error.response && error.response.data && error.response.data.detail) {
-        errorMessage = error.response.data.detail;
-      }
-      
-      setAuthError(errorMessage);
-      return { error: errorMessage };
-    }
-  };
-
-  // Verificar si el usuario tiene un rol específico
+  // Verificar se o usuário tem um cargo específico
   const hasRole = (role) => {
     if (!currentUser) return false;
     return currentUser.role === role;
   };
 
-  // Verificar si el usuario tiene un grado específico o superior
-  const hasDegree = (degree) => {
-    if (!currentUser) return false;
-    return currentUser.degree >= degree;
-  };
-
-  // Verificar si el usuario tiene un cargo específico
+  // Verificar se o usuário tem um cargo específico
   const hasOffice = (office) => {
     if (!currentUser || !currentUser.offices) return false;
-    return currentUser.offices.includes(office);
+    return currentUser.offices.some(o => o === office);
   };
 
-  const value = {
-    currentUser,
-    loading,
-    authError,
-    isAuthenticated,
-    requires2FA,
-    login,
-    logout,
-    register,
-    verify2FA,
-    resetPassword,
-    confirmResetPassword,
-    changePassword,
-    updateProfile,
-    setup2FA,
-    disable2FA,
-    hasRole,
-    hasDegree,
-    hasOffice
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider 
+      value={{ 
+        currentUser,
+        loading,
+        isAuthenticated,
+        requires2FA,
+        login,
+        logout,
+        register,
+        verify2FA,
+        resetPassword,
+        hasRole,
+        hasOffice
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export default AuthContext;

@@ -1,102 +1,95 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { publicApi, configService } from '../services/api';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios';
 
+// Criando o contexto de configuração
 const ConfigContext = createContext();
 
-export const useConfig = () => {
-  return useContext(ConfigContext);
-};
+// Hook personalizado para usar o contexto
+export const useConfig = () => useContext(ConfigContext);
 
+// Provider do contexto
 export const ConfigProvider = ({ children }) => {
-  const [config, setConfig] = useState({
-    lodgeName: 'Logia Luz y Verdad',
-    lodgeNumber: '79',
-    grandLodge: 'Gran Logia de la Jurisdicción',
-    language: localStorage.getItem('language') || 'es',
-    theme: localStorage.getItem('theme') || 'light',
-    dateFormat: localStorage.getItem('dateFormat') || 'DD/MM/YYYY',
-    timeFormat: localStorage.getItem('timeFormat') || '24h',
-    currency: localStorage.getItem('currency') || 'ARS',
-    isLoaded: false
-  });
+  const [config, setConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Cargar configuração desde o backend usando o serviço público
+  // Carregar configurações ao iniciar
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        // Usamos o serviço de configuração público que não requer autenticação
-        const response = await configService.getConfig();
-        setConfig(prevConfig => ({
-          ...prevConfig,
-          isLoaded: true,
-          ...response.data
-        }));
-      } catch (error) {
-        console.error('Erro ao carregar a configuração:', error);
-        console.error('Erro ao carregar a configuração do sistema');
+        // Tentar carregar do localStorage primeiro para experiência mais rápida
+        const cachedConfig = localStorage.getItem('appConfig');
+        if (cachedConfig) {
+          setConfig(JSON.parse(cachedConfig));
+        }
+
+        // Buscar configurações atualizadas da API
+        const response = await axios.get('/api/core/configuration/');
+        const configData = response.data;
+        
+        // Atualizar estado e cache
+        setConfig(configData);
+        localStorage.setItem('appConfig', JSON.stringify(configData));
+        setError(null);
+      } catch (err) {
+        console.error('Erro ao carregar configurações:', err);
+        setError('Não foi possível carregar as configurações do sistema.');
+        
+        // Se não tiver cache, usar configurações padrão
+        if (!config) {
+          const defaultConfig = {
+            appName: 'Luz y Verdad 79',
+            logo: null,
+            primaryColor: '#0ea5e9',
+            secondaryColor: '#8b5cf6',
+            contactEmail: 'contato@luzyverda79.org',
+            contactPhone: '(00) 1234-5678',
+            address: 'Endereço da Loja',
+            enableRegistration: false,
+            enablePasswordReset: true,
+            enableTwoFactorAuth: false,
+            maintenanceMode: false,
+          };
+          setConfig(defaultConfig);
+        }
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchConfig();
   }, []);
 
-  // Atualizar configuração no backend
+  // Função para atualizar configurações
   const updateConfig = async (newConfig) => {
     try {
-      // Usamos o serviço de configuração que requer autenticação para atualizações
-      const response = await configService.updateConfig(newConfig);
-      setConfig({ ...newConfig, isLoaded: true });
+      setLoading(true);
+      const response = await axios.put('/api/core/configuration/', newConfig);
+      const updatedConfig = response.data;
       
-      // Guardar preferências no localStorage
-      if (newConfig.language) localStorage.setItem('language', newConfig.language);
-      if (newConfig.theme) localStorage.setItem('theme', newConfig.theme);
-      if (newConfig.dateFormat) localStorage.setItem('dateFormat', newConfig.dateFormat);
-      if (newConfig.timeFormat) localStorage.setItem('timeFormat', newConfig.timeFormat);
-      if (newConfig.currency) localStorage.setItem('currency', newConfig.currency);
-      
-      console.log('Configuração atualizada com sucesso');
-      return true;
-    } catch (error) {
-      console.error('Erro ao atualizar a configuração:', error);
-      console.error('Erro ao atualizar a configuração');
-      return false;
+      // Atualizar estado e cache
+      setConfig(updatedConfig);
+      localStorage.setItem('appConfig', JSON.stringify(updatedConfig));
+      setError(null);
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao atualizar configurações:', err);
+      setError('Não foi possível atualizar as configurações do sistema.');
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
     }
-  };
-
-  // Alterar idioma
-  const changeLanguage = (language) => {
-    updateConfig({ ...config, language });
-  };
-
-  // Alterar tema
-  const changeTheme = (theme) => {
-    updateConfig({ ...config, theme });
-    
-    // Aplicar tema ao documento
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-
-  // Aplicar tema inicial
-  useEffect(() => {
-    if (config.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [config.theme]);
-
-  const value = {
-    config,
-    updateConfig,
-    changeLanguage,
-    changeTheme
   };
 
   return (
-    <ConfigContext.Provider value={value}>
+    <ConfigContext.Provider 
+      value={{ 
+        config,
+        loading,
+        error,
+        updateConfig
+      }}
+    >
       {children}
     </ConfigContext.Provider>
   );

@@ -1,30 +1,26 @@
-import { Outlet } from 'react-router-dom';
-import { useState } from 'react';
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const AuthLayout = () => {
-  const { error } = useAuth();
+  const { isAuthenticated } = useAuth();
+
+  // Redirecionar para dashboard se já estiver autenticado
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
-        <div className="flex justify-center mb-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-primary mb-2">Luz y Verdad</h1>
-            <p className="text-gray-600">Sistema de Gestión Masónica</p>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
-            <p>{error}</p>
-          </div>
-        )}
-        
-        <Outlet />
-        
-        <div className="mt-8 text-center text-sm text-gray-600">
-          <p>© {new Date().getFullYear()} Luz y Verdad. Todos los derechos reservados.</p>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Luz y Verdad 79
+        </h2>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <Outlet />
         </div>
       </div>
     </div>
