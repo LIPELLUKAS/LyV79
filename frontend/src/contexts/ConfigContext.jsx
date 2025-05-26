@@ -24,7 +24,8 @@ export const ConfigProvider = ({ children }) => {
         }
 
         // Buscar configurações atualizadas da API
-        const response = await axios.get('/api/core/configuration/');
+        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const response = await axios.get(`${apiBaseUrl}/core/configuration/`);
         const configData = response.data;
         
         // Atualizar estado e cache
@@ -64,7 +65,8 @@ export const ConfigProvider = ({ children }) => {
   const updateConfig = async (newConfig) => {
     try {
       setLoading(true);
-      const response = await axios.put('/api/core/configuration/', newConfig);
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await axios.put(`${apiBaseUrl}/core/configuration/`, newConfig);
       const updatedConfig = response.data;
       
       // Atualizar estado e cache

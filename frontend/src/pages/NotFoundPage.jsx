@@ -1,33 +1,34 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import './NotFoundPage.css';
 
 const NotFoundPage = () => {
   return (
-    <div className="min-h-screen bg-white px-4 py-16 sm:px-6 sm:py-24 md:grid md:place-items-center lg:px-8">
-      <div className="max-w-max mx-auto">
-        <main className="sm:flex">
-          <p className="text-4xl font-extrabold text-primary-600 sm:text-5xl">404</p>
-          <div className="sm:ml-6">
-            <div className="sm:border-l sm:border-gray-200 sm:pl-6">
-              <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">Página não encontrada</h1>
-              <p className="mt-1 text-base text-gray-500">Por favor, verifique o URL e tente novamente.</p>
-            </div>
-            <div className="mt-10 flex space-x-3 sm:border-l sm:border-transparent sm:pl-6">
-              <Link
-                to="/"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              >
-                Voltar para a página inicial
-              </Link>
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              >
-                Ir para o Dashboard
-              </Link>
-            </div>
+    <div className="not-found-container">
+      <div className="not-found-content">
+        <div className="not-found-error">
+          <div className="not-found-code">404</div>
+          <div className="not-found-divider"></div>
+          <div className="not-found-message">
+            <h1>Página não encontrada</h1>
+            <p>Por favor, verifique o URL e tente novamente.</p>
           </div>
-        </main>
+        </div>
+        
+        <div className="not-found-illustration">
+          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <path fill="var(--primary-light)" d="M47.7,-57.2C59.5,-45.8,65.9,-29.1,68.8,-12.1C71.7,4.9,71.2,22.2,63.3,35.1C55.4,48.1,40.2,56.8,24.4,62.4C8.6,68,-7.8,70.5,-22.9,66.2C-38,61.9,-51.8,50.7,-60.1,36.5C-68.4,22.3,-71.2,5,-67.4,-10.2C-63.6,-25.3,-53.2,-38.3,-40.7,-49.5C-28.2,-60.7,-14.1,-70.1,1.8,-72.2C17.7,-74.3,35.9,-68.7,47.7,-57.2Z" transform="translate(100 100)" />
+          </svg>
+        </div>
+        
+        <div className="not-found-actions">
+          <Link to="/" className="btn btn-primary">
+            Voltar para a página inicial
+          </Link>
+          <Link to="/dashboard" className="btn btn-outline">
+            Ir para o Dashboard
+          </Link>
+        </div>
       </div>
     </div>
   );

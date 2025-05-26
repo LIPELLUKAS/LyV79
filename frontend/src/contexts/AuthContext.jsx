@@ -39,10 +39,11 @@ export const AuthProvider = ({ children }) => {
             }
           }
           
-          // Obter perfil do usuário
-          const response = await axios.get('/api/authentication/users/me/', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+              // Obter perfil do usuário
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await axios.get(`${apiBaseUrl}/authentication/users/me/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });     });
           
           setCurrentUser(response.data);
           setIsAuthenticated(true);
@@ -63,7 +64,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       setLoading(true);
-      const response = await axios.post('/api/authentication/token/', { username, password });
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await axios.post(`${apiBaseUrl}/authentication/token/`, { username, password });
       
       // Se requer 2FA
       if (response.data.requires_2fa) {
@@ -108,7 +110,8 @@ export const AuthProvider = ({ children }) => {
   const verify2FA = async (code) => {
     try {
       setLoading(true);
-      const response = await axios.post('/api/authentication/two-factor/verify/', {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await axios.post(`${apiBaseUrl}/authentication/two-factor/verify/`, {
         code,
         user_id: tempUserId
       });
@@ -148,7 +151,8 @@ export const AuthProvider = ({ children }) => {
       const refresh = localStorage.getItem('refresh_token');
       if (!refresh) return false;
       
-      const response = await axios.post('/api/authentication/token/refresh/', {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await axios.post(`${apiBaseUrl}/authentication/token/refresh/`, {
         refresh
       });
       
@@ -183,7 +187,8 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       setLoading(true);
-      await axios.post('/api/authentication/users/', userData);
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      await axios.post(`${apiBaseUrl}/authentication/users/`, userData);
       showSuccess('Registro realizado com sucesso! Faça login para continuar.');
       return { success: true };
     } catch (error) {
@@ -214,7 +219,8 @@ export const AuthProvider = ({ children }) => {
   const resetPassword = async (email) => {
     try {
       setLoading(true);
-      await axios.post('/api/authentication/password-reset/', { email });
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      await axios.post(`${apiBaseUrl}/authentication/password-reset/`, { email });
       showSuccess('Instruções para redefinição de senha foram enviadas para seu email.');
       return { success: true };
     } catch (error) {

@@ -8,6 +8,7 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
+import './DashboardPage.css';
 
 const DashboardPage = () => {
   const { currentUser } = useAuth();
@@ -29,154 +30,134 @@ const DashboardPage = () => {
   ];
 
   return (
-    <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+    <div className="dashboard-container">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8">
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">Dashboard</h1>
+        </div>
         
         {/* Saudação */}
-        <div className="mt-4 bg-white shadow rounded-lg p-6 animate-fade-in">
-          <h2 className="text-xl font-medium text-gray-900">
-            Bem-vindo, {currentUser?.name || 'Usuário'}!
-          </h2>
-          <p className="mt-1 text-gray-500">
-            Aqui está um resumo das atividades e informações importantes do sistema.
-          </p>
+        <div className="dashboard-welcome">
+          <div className="dashboard-welcome-content">
+            <h2 className="dashboard-welcome-title">
+              Bem-vindo, {currentUser?.name || 'Usuário'}!
+            </h2>
+            <p className="dashboard-welcome-text">
+              Aqui está um resumo das atividades e informações importantes do sistema.
+            </p>
+          </div>
         </div>
         
         {/* Estatísticas */}
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="dashboard-stats">
           {stats.map((stat) => (
             <Link
               key={stat.name}
               to={stat.link}
-              className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300"
+              className="dashboard-stat-card"
             >
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className={`flex-shrink-0 rounded-md p-3 ${stat.color}`}>
-                    <stat.icon className="h-6 w-6 text-white" aria-hidden="true" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">{stat.name}</dt>
-                      <dd>
-                        <div className="text-lg font-medium text-gray-900">{stat.value}</div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
+              <div className={`dashboard-stat-icon ${stat.color}`}>
+                <stat.icon aria-hidden="true" />
+              </div>
+              <div className="dashboard-stat-content">
+                <div className="dashboard-stat-label">{stat.name}</div>
+                <div className="dashboard-stat-value">{stat.value}</div>
               </div>
             </Link>
           ))}
         </div>
         
         {/* Gráficos e Atividades Recentes */}
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="dashboard-grid">
           {/* Gráfico */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900">Resumo Financeiro</h3>
-            <div className="mt-4 h-64 flex items-center justify-center border border-gray-200 rounded-md">
-              <p className="text-gray-500">Gráfico de resumo financeiro será exibido aqui</p>
+          <div className="dashboard-card">
+            <div className="dashboard-card-header">
+              <h3 className="dashboard-card-title">Resumo Financeiro</h3>
+            </div>
+            <div className="dashboard-chart">
+              <p>Gráfico de resumo financeiro será exibido aqui</p>
             </div>
           </div>
           
           {/* Atividades Recentes */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900">Atividades Recentes</h3>
-            <div className="flow-root mt-4">
-              <ul className="-my-5 divide-y divide-gray-200">
-                {recentActivities.map((activity) => (
-                  <li key={activity.id} className="py-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary-100 text-primary-600">
-                          {activity.type === 'member' && <UserGroupIcon className="h-5 w-5" />}
-                          {activity.type === 'payment' && <CurrencyDollarIcon className="h-5 w-5" />}
-                          {activity.type === 'attendance' && <ClockIcon className="h-5 w-5" />}
-                          {activity.type === 'document' && <ChartBarIcon className="h-5 w-5" />}
-                        </span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {activity.action}
-                        </p>
-                        <p className="text-sm text-gray-500 truncate">
-                          {activity.name}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0 text-sm text-gray-400">
-                        {activity.date}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+          <div className="dashboard-card">
+            <div className="dashboard-card-header">
+              <h3 className="dashboard-card-title">Atividades Recentes</h3>
             </div>
-            <div className="mt-6">
-              <Link
-                to="/dashboard"
-                className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                Ver todas as atividades
-              </Link>
+            <div className="dashboard-activity-list">
+              {recentActivities.map((activity) => (
+                <div key={activity.id} className="dashboard-activity-item">
+                  <div className="dashboard-activity-icon">
+                    {activity.type === 'member' && <UserGroupIcon />}
+                    {activity.type === 'payment' && <CurrencyDollarIcon />}
+                    {activity.type === 'attendance' && <ClockIcon />}
+                    {activity.type === 'document' && <ChartBarIcon />}
+                  </div>
+                  <div className="dashboard-activity-content">
+                    <p className="dashboard-activity-title">
+                      {activity.action}
+                    </p>
+                    <p className="dashboard-activity-subtitle">
+                      {activity.name}
+                    </p>
+                  </div>
+                  <div className="dashboard-activity-time">
+                    {activity.date}
+                  </div>
+                </div>
+              ))}
             </div>
+            <Link
+              to="/dashboard"
+              className="dashboard-view-all"
+            >
+              Ver todas as atividades
+            </Link>
           </div>
         </div>
         
         {/* Acesso Rápido */}
-        <div className="mt-8 bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900">Acesso Rápido</h3>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="dashboard-quick-access">
+          <h3 className="dashboard-quick-access-title">Acesso Rápido</h3>
+          <div className="dashboard-quick-access-grid">
             <Link
               to="/secretaria/membros/novo"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-primary-500 hover:ring-1 hover:ring-primary-500 focus:outline-none"
+              className="dashboard-quick-access-item"
             >
-              <div className="flex-shrink-0">
-                <UserGroupIcon className="h-6 w-6 text-primary-600" />
+              <div className="dashboard-quick-access-icon">
+                <UserGroupIcon />
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">Novo Membro</p>
-              </div>
+              <div className="dashboard-quick-access-label">Novo Membro</div>
             </Link>
             
             <Link
               to="/tesouraria/pagamentos/novo"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-primary-500 hover:ring-1 hover:ring-primary-500 focus:outline-none"
+              className="dashboard-quick-access-item"
             >
-              <div className="flex-shrink-0">
-                <CurrencyDollarIcon className="h-6 w-6 text-primary-600" />
+              <div className="dashboard-quick-access-icon">
+                <CurrencyDollarIcon />
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">Registrar Pagamento</p>
-              </div>
+              <div className="dashboard-quick-access-label">Registrar Pagamento</div>
             </Link>
             
             <Link
               to="/secretaria/presenca"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-primary-500 hover:ring-1 hover:ring-primary-500 focus:outline-none"
+              className="dashboard-quick-access-item"
             >
-              <div className="flex-shrink-0">
-                <ClockIcon className="h-6 w-6 text-primary-600" />
+              <div className="dashboard-quick-access-icon">
+                <ClockIcon />
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">Registrar Presença</p>
-              </div>
+              <div className="dashboard-quick-access-label">Registrar Presença</div>
             </Link>
             
             <Link
               to="/relatorios"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-primary-500 hover:ring-1 hover:ring-primary-500 focus:outline-none"
+              className="dashboard-quick-access-item"
             >
-              <div className="flex-shrink-0">
-                <ChartBarIcon className="h-6 w-6 text-primary-600" />
+              <div className="dashboard-quick-access-icon">
+                <ChartBarIcon />
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">Gerar Relatórios</p>
-              </div>
+              <div className="dashboard-quick-access-label">Gerar Relatórios</div>
             </Link>
           </div>
         </div>
