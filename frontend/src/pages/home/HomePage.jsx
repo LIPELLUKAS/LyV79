@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,6 +8,7 @@ import heroImage from '../../assets/hero-image.svg';
 
 const HomePage = () => {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="bg-gradient-to-b from-gray-50 to-white min-h-screen">
@@ -91,7 +92,7 @@ const HomePage = () => {
                   </div>
                 }
                 hover
-                onClick={() => isAuthenticated && window.location.href = '/secretaria'}
+                onClick={() => isAuthenticated && navigate('/secretaria')}
               >
                 <p className="text-gray-500">
                   Gerencie o cadastro de membros, registre presenças e organize documentos importantes.
@@ -108,7 +109,7 @@ const HomePage = () => {
                   </div>
                 }
                 hover
-                onClick={() => isAuthenticated && window.location.href = '/tesouraria'}
+                onClick={() => isAuthenticated && navigate('/tesouraria')}
               >
                 <p className="text-gray-500">
                   Controle financeiro completo, com registro de pagamentos, despesas e geração de relatórios.
@@ -125,7 +126,7 @@ const HomePage = () => {
                   </div>
                 }
                 hover
-                onClick={() => isAuthenticated && window.location.href = '/comunicacoes'}
+                onClick={() => isAuthenticated && navigate('/comunicacoes')}
               >
                 <p className="text-gray-500">
                   Envie mensagens, notificações e mantenha todos os membros informados sobre eventos e atividades.
