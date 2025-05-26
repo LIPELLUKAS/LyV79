@@ -13,7 +13,7 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   
   const { login } = useAuth();
-  const { lodgeConfig } = useConfig();
+  const { config } = useConfig();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
 
@@ -34,7 +34,7 @@ const Login = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [navigate]);
 
@@ -63,13 +63,11 @@ const Login = () => {
       const result = await login(username, password);
       
       if (result.requires_2fa) {
-        // Redirigir a la página de verificación 2FA
-        navigate('/auth/verify-2fa');
-        showNotification('Se requiere verificación de dos factores', 'info');
+        // Redirigir a la página de verificación 2        navigate('/verify-2fa');       showNotification('Se requiere verificación de dos factores', 'info');
       } else if (result.success) {
         // Redirigir al dashboard
         showNotification('Inicio de sesión exitoso', 'success');
-        navigate('/');
+        navigate('/dashboard');
       } else {
         setError(result.error || 'Error al iniciar sesión');
       }
@@ -135,13 +133,13 @@ const Login = () => {
         </div>
         
         <div className="text-center">
-          {lodgeConfig?.logo ? (
+          {config?.logo ? (
             <div className={`relative mx-auto h-28 w-28 rounded-full ${
               darkMode ? 'bg-gray-700' : 'bg-indigo-100'
             } p-2 shadow-inner flex items-center justify-center`}>
               <img 
                 className="h-20 w-auto object-contain" 
-                src={lodgeConfig.logo} 
+                src={config.logo} 
                 alt="Logo de la Logia" 
               />
             </div>
@@ -161,7 +159,7 @@ const Login = () => {
           <h2 className={`mt-6 text-3xl font-extrabold tracking-tight ${
             darkMode ? 'text-white' : 'text-gray-900'
           }`}>
-            {lodgeConfig?.lodge_name || 'Luz y Verdad'}
+            {config?.lodge_name || 'Luz y Verdad'}
           </h2>
           <p className={`mt-2 text-sm ${
             darkMode ? 'text-gray-300' : 'text-gray-600'

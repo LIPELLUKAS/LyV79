@@ -3,7 +3,7 @@ import { getToken, refreshToken } from './tokenService';
 
 // Criar instância pública de axios para endpoints que não requerem autenticação
 export const publicApi = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -11,7 +11,7 @@ export const publicApi = axios.create({
 
 // Criar instância de axios com configuração base
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -22,7 +22,7 @@ api.interceptors.request.use(
   async (config) => {
     const token = getToken();
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Token ${token}`;
     }
     return config;
   },
@@ -81,7 +81,7 @@ export const authService = {
   resetPassword: (email) => api.post('/authentication/password-reset/', { email }),
   confirmResetPassword: (data) => api.post('/authentication/password-reset/confirm/', data),
   setup2FA: () => api.get('/authentication/two-factor/setup/'),
-  verify2FA: (code) => api.post('/authentication/two-factor/verify/', { code }),
+  verify2FA: (code, userId) => api.post('/authentication/two-factor/verify/', { code, user_id: userId }),
   disable2FA: () => api.post('/authentication/two-factor/disable/'),
 };
 

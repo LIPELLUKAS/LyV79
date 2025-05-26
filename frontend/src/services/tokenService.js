@@ -1,69 +1,58 @@
-/**
- * Servicio para gestionar tokens de autenticación
- */
-
-/**
- * Obtiene el token de acceso almacenado
- * @returns {string|null} - Token de acceso o null si no existe
- */
+// Obter token do localStorage
 export const getToken = () => {
   return localStorage.getItem('token');
 };
 
-/**
- * Guarda el token de acceso y el token de actualización
- * @param {string} token - Token de acceso
- * @param {string} refreshToken - Token de actualización
- */
-export const saveTokens = (token, refreshToken) => {
-  localStorage.setItem('token', token);
-  localStorage.setItem('refreshToken', refreshToken);
+// Obter refresh token do localStorage ou sessionStorage
+export const getRefreshToken = () => {
+  return localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
 };
 
-/**
- * Elimina los tokens almacenados
- */
+// Salvar tokens
+export const saveTokens = (token, refreshToken, rememberMe = false) => {
+  localStorage.setItem('token', token);
+  
+  if (rememberMe) {
+    localStorage.setItem('refresh_token', refreshToken);
+  } else {
+    sessionStorage.setItem('refresh_token', refreshToken);
+  }
+};
+
+// Limpar tokens
 export const clearTokens = () => {
   localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('refresh_token');
+  sessionStorage.removeItem('refresh_token');
 };
 
-/**
- * Obtiene el token de actualización almacenado
- * @returns {string|null} - Token de actualización o null si no existe
- */
-export const getRefreshToken = () => {
-  return localStorage.getItem('refreshToken');
-};
-
-/**
- * Actualiza el token de acceso usando el token de actualización
- * @returns {Promise} - Promise con el resultado de la operación
- */
-export const refreshToken = async (api) => {
-  const refresh = localStorage.getItem('refreshToken');
-  if (!refresh) {
-    throw new Error('No refresh token available');
-  }
-  
+// Refresh token
+export const refreshToken = async () => {
   try {
-    const response = await api.post('/authentication/token/refresh/', { refresh });
-    if (response.data && response.data.access) {
-      localStorage.setItem('token', response.data.access);
-      return response.data;
+    const refresh = getRefreshToken();
+    
+    if (!refresh) {
+      throw new Error('No refresh token available');
     }
-    throw new Error('Failed to refresh token');
+    
+    // Importar axios diretamente aqui para evitar dependência circular
+    const axios = require('axios');
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/authentication/token/refresh/`,
+      { refresh }
+    );
+    
+    const { access, refresh: newRefresh } = response.data;
+    
+    // Determinar se o usuário optou por "lembrar-me"
+    const rememberMe = !!localStorage.getItem('refresh_token');
+    
+    // Salvar novos tokens
+    saveTokens(access, newRefresh, rememberMe);
+    
+    return access;
   } catch (error) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
+    clearTokens();
     throw error;
   }
-};
-
-export default {
-  getToken,
-  saveTokens,
-  clearTokens,
-  getRefreshToken,
-  refreshToken
 };

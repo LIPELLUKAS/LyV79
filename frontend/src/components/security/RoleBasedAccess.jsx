@@ -39,7 +39,7 @@ const RoleBasedAccess = ({ children, allowedRoles, allowedOffices, requireAdmin 
 
     // Verificar si el usuario tiene un cargo permitido
     if (allowedOffices && allowedOffices.length > 0) {
-      const hasOffice = allowedOffices.includes(currentUser.office);
+      const hasOffice = allowedOffices.some(office => currentUser.offices && currentUser.offices.includes(office));
       if (!hasOffice && !currentUser.is_admin) { // Los administradores siempre tienen acceso
         showNotification('No tiene el cargo necesario para acceder a esta sección', 'error');
         navigate('/dashboard');

@@ -68,7 +68,7 @@ const MainLayout = () => {
             
             <li>
               <Link 
-                to="/communications/notifications" 
+                to="/communications/messages" 
                 className={`flex items-center px-4 py-3 ${isActive('/communications') ? 'bg-primary-dark' : 'hover:bg-primary-light'}`}
               >
                 <span className="material-icons mr-3">notifications</span>
@@ -208,7 +208,7 @@ const MainLayout = () => {
                   
                   <li>
                     <Link 
-                      to="/communications/notifications" 
+                      to="/communications/messages" 
                       className={`flex items-center px-4 py-3 ${isActive('/communications') ? 'bg-primary-dark' : 'hover:bg-primary-light'}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
