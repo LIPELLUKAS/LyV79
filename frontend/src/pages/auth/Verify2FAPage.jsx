@@ -1,85 +1,136 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNotification } from '../../contexts/NotificationContext';
+# Página de Verificação 2FA
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
+import Alert from '../../components/ui/Alert';
+import logo from '../../assets/logo.svg';
+import './Verify2FAPage.css';
 
 const Verify2FAPage = () => {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(30);
   
-  const { verify2FA } = useAuth();
-  const { showError } = useNotification();
+  const { verify2FA, tempUserId, requires2FA } = useAuth();
   const navigate = useNavigate();
-
+  
+  // Redirecionar se não houver necessidade de 2FA
+  useEffect(() => {
+    if (!requires2FA) {
+      navigate('/login');
+    }
+  }, [requires2FA, navigate]);
+  
+  // Contador regressivo para expiração do código
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    
+    const timer = setTimeout(() => {
+      setTimeLeft(timeLeft - 1);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [timeLeft]);
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!code) {
-      showError('Por favor, insira o código de verificação.');
+      setError('Por favor, digite o código de verificação.');
       return;
     }
     
     setIsLoading(true);
+    setError('');
     
-    try {
-      const result = await verify2FA(code);
-      
-      if (result.success) {
-        navigate('/dashboard');
-      }
-    } catch (error) {
-      console.error('Erro ao verificar código 2FA:', error);
-    } finally {
-      setIsLoading(false);
+    const result = await verify2FA(code);
+    
+    if (result.success) {
+      navigate('/dashboard');
+    } else if (result.error) {
+      setError(result.error);
     }
+    
+    setIsLoading(false);
   };
-
+  
   return (
-    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Verificação de Dois Fatores
+    <div className="verify-2fa-container">
+      <div className="verify-2fa-header">
+        <img
+          className="verify-2fa-logo"
+          src={logo}
+          alt="Luz y Verdad"
+        />
+        <h2 className="verify-2fa-title">
+          Verificação em Duas Etapas
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Insira o código de verificação gerado pelo seu aplicativo autenticador.
+        <p className="verify-2fa-subtitle">
+          Digite o código de verificação enviado para seu dispositivo
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="code" className="block text-sm font-medium text-gray-700">
-                Código de Verificação
-              </label>
-              <div className="mt-1">
-                <input
-                  id="code"
-                  name="code"
-                  type="text"
-                  autoComplete="one-time-code"
-                  required
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  placeholder="000000"
-                />
+      <div className="verify-2fa-card">
+        <div className="verify-2fa-card-body">
+          {error && (
+            <div className="mb-4">
+              <Alert 
+                type="error" 
+                message={error} 
+                onClose={() => setError('')}
+              />
+            </div>
+          )}
+          
+          <form className="verify-2fa-form" onSubmit={handleSubmit}>
+            <div className="verify-2fa-code-input">
+              <Input
+                label="Código de Verificação"
+                id="code"
+                name="code"
+                type="text"
+                autoComplete="one-time-code"
+                required
+                aria-required="true"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Digite o código de 6 dígitos"
+                maxLength={6}
+                className="text-center text-2xl tracking-widest"
+              />
+              
+              <div className="verify-2fa-timer">
+                <p>O código expira em: <span className={timeLeft < 10 ? "text-red-600" : ""}>{timeLeft} segundos</span></p>
               </div>
             </div>
 
-            <div>
-              <button
+            <div className="verify-2fa-button">
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full"
+                variant="primary"
+                size="lg"
               >
                 {isLoading ? (
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Verificando...
+                  </>
                 ) : 'Verificar'}
-              </button>
+              </Button>
+            </div>
+            
+            <div className="verify-2fa-help">
+              <p>Não recebeu o código? <button type="button" className="text-primary-600 hover:text-primary-800">Reenviar código</button></p>
+              <p>Problemas com a verificação? <button type="button" className="text-primary-600 hover:text-primary-800" onClick={() => navigate('/login')}>Voltar para o login</button></p>
             </div>
           </form>
         </div>

@@ -17,16 +17,62 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
   const [tempUserId, setTempUserId] = useState(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
   const navigate = useNavigate();
   const { showSuccess, showError } = useNotification();
+
+  // Função utilitária para extrair mensagens de erro da API
+  const extractErrorMessage = (error) => {
+    if (!error.response) {
+      return 'Erro de conexão. Verifique sua internet.';
+    }
+    
+    const { status, data } = error.response;
+    
+    if (status === 401) {
+      return 'Credenciais inválidas. Verifique seu nome de usuário e senha.';
+    }
+    
+    if (data) {
+      if (data.detail) {
+        return data.detail;
+      }
+      
+      // Para erros de validação (geralmente em formato de objeto)
+      if (typeof data === 'object' && !Array.isArray(data)) {
+        const firstError = Object.values(data)[0];
+        if (Array.isArray(firstError)) {
+          return firstError[0];
+        }
+        return String(firstError);
+      }
+    }
+    
+    return 'Ocorreu um erro. Por favor, tente novamente.';
+  };
+
+  // Função para validar tokens
+  const isValidToken = (token) => {
+    if (!token || typeof token !== 'string') return false;
+    
+    try {
+      const decoded = jwtDecode(token);
+      return !!decoded.exp && !!decoded.user_id;
+    } catch (error) {
+      console.error('Token inválido:', error);
+      return false;
+    }
+  };
 
   // Verificar se há um token válido ao carregar a aplicação
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (token) {
+        // Verificar tanto no localStorage quanto no sessionStorage
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        
+        if (token && isValidToken(token)) {
           // Verificar se o token expirou
           const decodedToken = jwtDecode(token);
           const currentTime = Date.now() / 1000;
@@ -39,11 +85,11 @@ export const AuthProvider = ({ children }) => {
             }
           }
           
-              // Obter perfil do usuário
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const response = await axios.get(`${apiBaseUrl}/authentication/users/me/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });     });
+          // Obter perfil do usuário
+          const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+          const response = await axios.get(`${apiBaseUrl}/authentication/users/me/`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           
           setCurrentUser(response.data);
           setIsAuthenticated(true);
@@ -54,6 +100,7 @@ export const AuthProvider = ({ children }) => {
         logout();
       } finally {
         setLoading(false);
+        setInitialLoadComplete(true);
       }
     };
 
@@ -61,7 +108,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Função para fazer login
-  const login = async (username, password) => {
+  const login = async (username, password, rememberMe = false) => {
     try {
       setLoading(true);
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -77,9 +124,15 @@ export const AuthProvider = ({ children }) => {
       // Se não requer 2FA, guardar token e dados do usuário
       const { token, refresh_token, user } = response.data;
       
-      // Guardar tokens
-      localStorage.setItem('token', token);
-      localStorage.setItem('refresh_token', refresh_token);
+      // Validar token antes de armazenar
+      if (!isValidToken(token)) {
+        throw new Error('Token inválido recebido do servidor');
+      }
+      
+      // Guardar tokens de acordo com a preferência de "lembrar-me"
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem('token', token);
+      storage.setItem('refresh_token', refresh_token);
       
       setCurrentUser(user);
       setIsAuthenticated(true);
@@ -89,15 +142,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Erro de login:', error);
       
-      let errorMessage = 'Erro ao fazer login. Por favor, tente novamente.';
-      
-      if (error.response) {
-        if (error.response.status === 401) {
-          errorMessage = 'Credenciais inválidas. Verifique seu nome de usuário e senha.';
-        } else if (error.response.data && error.response.data.detail) {
-          errorMessage = error.response.data.detail;
-        }
-      }
+      // Usar a função utilitária para extrair mensagem de erro
+      const errorMessage = extractErrorMessage(error);
       
       showError(errorMessage);
       return { error: errorMessage };
@@ -110,6 +156,11 @@ export const AuthProvider = ({ children }) => {
   const verify2FA = async (code) => {
     try {
       setLoading(true);
+      
+      if (!code || !tempUserId) {
+        throw new Error('Código ou identificação de usuário inválidos');
+      }
+      
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       const response = await axios.post(`${apiBaseUrl}/authentication/two-factor/verify/`, {
         code,
@@ -118,9 +169,18 @@ export const AuthProvider = ({ children }) => {
       
       const { token, refresh_token, user } = response.data;
       
-      // Guardar tokens
-      localStorage.setItem('token', token);
-      localStorage.setItem('refresh_token', refresh_token);
+      // Validar token antes de armazenar
+      if (!isValidToken(token)) {
+        throw new Error('Token inválido recebido do servidor');
+      }
+      
+      // Verificar se há preferência de armazenamento (localStorage vs sessionStorage)
+      // Usar o mesmo armazenamento que foi usado no login inicial
+      const storage = localStorage.getItem('remember_preference') === 'true' ? 
+        localStorage : sessionStorage;
+      
+      storage.setItem('token', token);
+      storage.setItem('refresh_token', refresh_token);
       
       setCurrentUser(user);
       setIsAuthenticated(true);
@@ -132,11 +192,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Erro ao verificar 2FA:', error);
       
-      let errorMessage = 'Código inválido. Por favor, tente novamente.';
-      
-      if (error.response && error.response.data && error.response.data.detail) {
-        errorMessage = error.response.data.detail;
-      }
+      // Usar a função utilitária para extrair mensagem de erro
+      const errorMessage = extractErrorMessage(error);
       
       showError(errorMessage);
       return { error: errorMessage };
@@ -148,7 +205,8 @@ export const AuthProvider = ({ children }) => {
   // Função para atualizar token
   const refreshToken = async () => {
     try {
-      const refresh = localStorage.getItem('refresh_token');
+      // Verificar tanto no localStorage quanto no sessionStorage
+      const refresh = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
       if (!refresh) return false;
       
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -163,12 +221,21 @@ export const AuthProvider = ({ children }) => {
       
       const { access, refresh: newRefresh } = response.data;
       
-      localStorage.setItem('token', access);
-      localStorage.setItem('refresh_token', newRefresh);
+      // Validar token antes de armazenar
+      if (!isValidToken(access)) {
+        throw new Error('Token inválido recebido do servidor');
+      }
+      
+      // Determinar onde armazenar os tokens (mesmo local de onde veio o refresh token)
+      const storage = localStorage.getItem('refresh_token') ? localStorage : sessionStorage;
+      storage.setItem('token', access);
+      storage.setItem('refresh_token', newRefresh);
       
       return true;
     } catch (error) {
       console.error('Erro ao atualizar token:', error);
+      const errorMessage = extractErrorMessage(error);
+      showError(`Sessão expirada: ${errorMessage}`);
       logout();
       return false;
     }
@@ -176,8 +243,13 @@ export const AuthProvider = ({ children }) => {
 
   // Função para fazer logout
   const logout = () => {
+    // Limpar tokens de ambos os storages
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('remember_preference');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('refresh_token');
+    
     setCurrentUser(null);
     setIsAuthenticated(false);
     navigate('/');
@@ -187,6 +259,12 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       setLoading(true);
+      
+      // Validação básica dos dados
+      if (!userData.username || !userData.email || !userData.password) {
+        throw new Error('Todos os campos obrigatórios devem ser preenchidos');
+      }
+      
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       await axios.post(`${apiBaseUrl}/authentication/users/`, userData);
       showSuccess('Registro realizado com sucesso! Faça login para continuar.');
@@ -194,17 +272,27 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Erro ao registrar:', error);
       
-      let errorMessage = 'Erro ao registrar. Por favor, tente novamente.';
+      // Usar a função utilitária para extrair mensagem de erro
+      let errorMessage = extractErrorMessage(error);
       
+      // Tratamento especial para erros de validação de registro
       if (error.response && error.response.data) {
-        // Processar erros específicos
         const errors = error.response.data;
+        // Construir uma mensagem de erro mais detalhada
+        const errorDetails = [];
+        
         if (errors.username) {
-          errorMessage = `Erro no nome de usuário: ${errors.username.join(', ')}`;
-        } else if (errors.email) {
-          errorMessage = `Erro no email: ${errors.email.join(', ')}`;
-        } else if (errors.password) {
-          errorMessage = `Erro na senha: ${errors.password.join(', ')}`;
+          errorDetails.push(`Nome de usuário: ${errors.username.join(', ')}`);
+        }
+        if (errors.email) {
+          errorDetails.push(`Email: ${errors.email.join(', ')}`);
+        }
+        if (errors.password) {
+          errorDetails.push(`Senha: ${errors.password.join(', ')}`);
+        }
+        
+        if (errorDetails.length > 0) {
+          errorMessage = `Erro no registro: ${errorDetails.join('; ')}`;
         }
       }
       
@@ -219,14 +307,23 @@ export const AuthProvider = ({ children }) => {
   const resetPassword = async (email) => {
     try {
       setLoading(true);
+      
+      if (!email) {
+        throw new Error('O endereço de email é obrigatório');
+      }
+      
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       await axios.post(`${apiBaseUrl}/authentication/password-reset/`, { email });
       showSuccess('Instruções para redefinição de senha foram enviadas para seu email.');
       return { success: true };
     } catch (error) {
       console.error('Erro ao solicitar redefinição de senha:', error);
-      showError('Não foi possível enviar o email de redefinição de senha.');
-      return { error: 'Não foi possível enviar o email de redefinição de senha.' };
+      
+      // Usar a função utilitária para extrair mensagem de erro
+      const errorMessage = extractErrorMessage(error);
+      
+      showError(errorMessage);
+      return { error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -244,6 +341,44 @@ export const AuthProvider = ({ children }) => {
     return currentUser.offices.some(o => o === office);
   };
 
+  // Configurar interceptor para renovação automática de token
+  useEffect(() => {
+    // Configurar interceptor para respostas
+    const responseInterceptor = axios.interceptors.response.use(
+      response => response,
+      async error => {
+        const originalRequest = error.config;
+        
+        // Se receber 401 e não for uma tentativa de refresh
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          
+          try {
+            const refreshed = await refreshToken();
+            if (refreshed) {
+              // Atualizar token no cabeçalho da requisição original
+              const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+              originalRequest.headers['Authorization'] = `Bearer ${token}`;
+              return axios(originalRequest);
+            }
+          } catch (refreshError) {
+            console.error('Erro ao renovar token:', refreshError);
+          }
+          
+          // Se chegou aqui, o refresh falhou
+          logout();
+        }
+        
+        return Promise.reject(error);
+      }
+    );
+    
+    // Limpar interceptor ao desmontar
+    return () => {
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
+
   return (
     <AuthContext.Provider 
       value={{ 
@@ -251,6 +386,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         isAuthenticated,
         requires2FA,
+        initialLoadComplete,
         login,
         logout,
         register,

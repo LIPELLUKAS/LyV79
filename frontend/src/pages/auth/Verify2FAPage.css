@@ -1,0 +1,113 @@
+/* Verify2FAPage.css - Estilos para a página de verificação 2FA */
+
+.verify-2fa-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4);
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+}
+
+.verify-2fa-header {
+  text-align: center;
+  margin-bottom: var(--spacing-8);
+  color: white;
+  animation: fadeIn var(--transition-normal);
+}
+
+.verify-2fa-logo {
+  height: 60px;
+  width: auto;
+  margin-bottom: var(--spacing-4);
+  filter: brightness(0) invert(1);
+}
+
+.verify-2fa-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.verify-2fa-subtitle {
+  font-size: var(--font-size-lg);
+  opacity: 0.9;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.verify-2fa-card {
+  width: 100%;
+  max-width: 450px;
+  background-color: var(--background);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  animation: slideInUp var(--transition-normal);
+}
+
+.verify-2fa-card-body {
+  padding: var(--spacing-8);
+}
+
+.verify-2fa-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.verify-2fa-code-input {
+  margin-bottom: var(--spacing-4);
+}
+
+.verify-2fa-timer {
+  text-align: center;
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-light-color);
+}
+
+.verify-2fa-button {
+  margin-top: var(--spacing-4);
+}
+
+.verify-2fa-help {
+  margin-top: var(--spacing-6);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-light-color);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* Animação para o contador */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.verify-2fa-timer span {
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Responsividade */
+@media (max-width: 640px) {
+  .verify-2fa-title {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .verify-2fa-subtitle {
+    font-size: var(--font-size-base);
+  }
+  
+  .verify-2fa-card-body {
+    padding: var(--spacing-6);
+  }
+}
