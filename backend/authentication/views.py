@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.utils import timezone
 from django.conf import settings
 from django.core.mail import send_mail
